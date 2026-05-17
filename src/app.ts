@@ -31,6 +31,8 @@ import { createShortcutDefinitions } from "./shortcuts.js";
 
 const DATA_URL = "processed-data.json";
 const PAGE_TITLE = "Bilar";
+const buildId = document.querySelector<HTMLMetaElement>('meta[name="build-id"]')?.content ?? "";
+const DATA_URL_WITH_VERSION = buildId ? `${DATA_URL}?v=${encodeURIComponent(buildId)}` : DATA_URL;
 
 function must<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -614,7 +616,7 @@ function bindInventoryControls(store: AppStore): void {
 }
 
 async function loadData(): Promise<AppData> {
-  const response = await fetch(DATA_URL);
+  const response = await fetch(DATA_URL_WITH_VERSION, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }

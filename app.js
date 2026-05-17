@@ -3100,6 +3100,8 @@ function createShortcutDefinitions(maxPriceValue) {
 // src/app.ts
 var DATA_URL = "processed-data.json";
 var PAGE_TITLE = "Bilar";
+var buildId = document.querySelector('meta[name="build-id"]')?.content ?? "";
+var DATA_URL_WITH_VERSION = buildId ? `${DATA_URL}?v=${encodeURIComponent(buildId)}` : DATA_URL;
 function must(id) {
   const element = document.getElementById(id);
   if (!element) {
@@ -3598,7 +3600,7 @@ function bindInventoryControls(store) {
   });
 }
 async function loadData() {
-  const response = await fetch(DATA_URL);
+  const response = await fetch(DATA_URL_WITH_VERSION, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }

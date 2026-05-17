@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.app.json && esbuild src/app.ts --bundle --format=esm --platform=browser --outfile=app.js && cp dist/core.js core.js && node scripts/normalize.cjs",
+    "build": "tsc -p tsconfig.app.json && esbuild src/app.ts --bundle --format=esm --platform=browser --outfile=app.js && cp dist/core.js core.js && node scripts/normalize.cjs && node scripts/bust-cache.cjs",
     "normalize": "node scripts/normalize.cjs",
     "build:test": "tsc -p tsconfig.test.json",
     "test": "npm run normalize && npm run build:test && node --test build-tests/tests/**/*.test.js"
