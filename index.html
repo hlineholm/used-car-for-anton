@@ -162,13 +162,27 @@
       margin: 0;
       font-size: 1rem;
     }
+    .tool-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
     .view-toggle {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      display: inline-flex;
+      gap: 8px;
+      justify-content: flex-end;
     }
     .view-toggle button {
-      width: 100%;
+      width: auto;
+      min-width: 0;
+      padding: 6px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.88rem;
+      line-height: 1;
+      border-radius: 999px;
     }
     .view-toggle button.active {
       border-color: var(--link);
@@ -364,10 +378,18 @@
           <div id="shortcut-root"></div>
         </section>
         <section class="tool-card">
-          <h3>View mode</h3>
-          <div class="view-toggle">
-            <button id="view-cards" type="button" class="active">Card view</button>
-            <button id="view-list" type="button">List view</button>
+          <div class="tool-card-head">
+            <h3>View mode</h3>
+            <div class="view-toggle">
+              <button id="view-cards" type="button" class="active" aria-label="Card view" title="Card view">
+                <span aria-hidden="true">▦</span>
+                <span>Card</span>
+              </button>
+              <button id="view-list" type="button" aria-label="List view" title="List view">
+                <span aria-hidden="true">☰</span>
+                <span>List</span>
+              </button>
+            </div>
           </div>
         </section>
       </div>
