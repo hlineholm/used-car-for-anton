@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filterable Blocket inventory for automatic passenger cars under 50,000 SEK within 200 km of Uppsala</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1f2328;
+      --muted: #59636e;
+      --border: #d0d7de;
+      --header: #f6f8fa;
+      --panel: #f6f8fa;
+      --link: #0969da;
+      --lower: #1a7f37;
+      --medium: #9a6700;
+      --higher: #bf8700;
+      --avoid: #cf222e;
+      --unrated: #6e7781;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #9da7b3;
+        --border: #30363d;
+        --header: #161b22;
+        --panel: #161b22;
+        --link: #58a6ff;
+        --lower: #3fb950;
+        --medium: #d29922;
+        --higher: #e3b341;
+        --avoid: #f85149;
+        --unrated: #8b949e;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    h1, h2, h3 { line-height: 1.2; }
+    h1 { margin: 0 0 8px; }
+    h2 { margin-top: 32px; }
+    p, li { max-width: 95ch; }
+    a { color: var(--link); }
+    .muted { color: var(--muted); }
+    .panel {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .summary-card {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+    }
+    .summary-card strong {
+      display: block;
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--fg);
+      font: inherit;
+    }
+    button {
+      cursor: pointer;
+      width: auto;
+      min-width: 140px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid currentColor;
+    }
+    .badge-lower { color: var(--lower); }
+    .badge-medium { color: var(--medium); }
+    .badge-higher { color: var(--higher); }
+    .badge-avoid { color: var(--avoid); }
+    .badge-unrated { color: var(--unrated); }
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1180px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: var(--header); }
+    ul.compact {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .status {
+      margin-top: 18px;
+      min-height: 1.5em;
+    }
+    .page-shortlist .inventory-only {
+      display: none;
+    }
+  </style>
+</head>
+<body class="page-inventory">
+  <main>
+    <h1 id="page-heading">Loading...</h1>
+    <p class="muted" id="page-intro"></p>
+    <p class="muted" id="service-disclaimer"></p>
+
+    <section class="panel">
+      <h2 id="bottom-line-heading"></h2>
+      <p id="bottom-line-text"></p>
+      <div class="summary-grid" id="summary-cards"></div>
+      <div class="two-col inventory-only">
+        <div>
+          <h3>Model spot-check</h3>
+          <ul class="compact" id="model-spot-check"></ul>
+        </div>
+        <div>
+          <h3>Most common models in the cleaned inventory</h3>
+          <ul class="compact" id="top-models"></ul>
+        </div>
+      </div>
+      <div class="two-col inventory-only">
+        <div>
+          <h3>Heaviest listing areas</h3>
+          <ul class="compact" id="top-locations"></ul>
+        </div>
+        <div>
+          <h3>Decision rules used in the shortlist</h3>
+          <ul class="compact" id="decision-rules"></ul>
+        </div>
+      </div>
+    </section>
+
+    <div id="prius-root"></div>
+    <div id="shortlists-root"></div>
+
+    <section class="panel inventory-only" id="full-inventory">
+      <h2>Filter the full inventory</h2>
+      <p class="muted" id="inventory-filter-intro"></p>
+      <div class="filters">
+        <div>
+          <label for="search">Search</label>
+          <input id="search" type="text" placeholder="Prius, Uppsala, CVT, KGC602...">
+        </div>
+        <div>
+          <label for="max-price">Max price (SEK)</label>
+          <input id="max-price" type="number" min="0" step="1000" value="50000">
+        </div>
+        <div>
+          <label for="max-mileage">Max mileage (mil)</label>
+          <input id="max-mileage" type="number" min="0" step="1000" placeholder="Leave blank for any">
+        </div>
+        <div>
+          <label for="fuel">Fuel</label>
+          <select id="fuel"></select>
+        </div>
+        <div>
+          <label for="seller">Seller type</label>
+          <select id="seller"></select>
+        </div>
+        <div>
+          <label for="body">Body type</label>
+          <select id="body"></select>
+        </div>
+        <div>
+          <label for="risk">Risk bucket</label>
+          <select id="risk"></select>
+        </div>
+        <div>
+          <label for="sort-1">Sort 1</label>
+          <select id="sort-1"></select>
+        </div>
+        <div>
+          <label for="sort-2">Sort 2</label>
+          <select id="sort-2"></select>
+        </div>
+        <div>
+          <label for="sort-3">Sort 3</label>
+          <select id="sort-3"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="reset-filters" type="button">Reset filters</button>
+        <span class="muted" id="results-summary"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Year</th>
+              <th>Mileage</th>
+              <th>Price</th>
+              <th>Fuel</th>
+              <th>Location</th>
+              <th>Seller</th>
+              <th>Body</th>
+              <th>Owners</th>
+              <th>Reg</th>
+              <th>Risk</th>
+              <th>Service due soon</th>
+              <th>Likely cost</th>
+              <th>Forum watchouts</th>
+              <th>Why flagged this way</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="status muted" id="page-status">Loading page data...</p>
+    <noscript><p class="status">This page needs JavaScript because it loads its data from a JSON file.</p></noscript>
+  </main>
+
+  <script>
+    const DATA_URL = "data.json";
+    const pageMode = "inventory";
+    let appData = null;
+    let inventoryControlsBound = false;
+
+    const elements = {
+      heading: document.getElementById("page-heading"),
+      intro: document.getElementById("page-intro"),
+      serviceDisclaimer: document.getElementById("service-disclaimer"),
+      bottomLineHeading: document.getElementById("bottom-line-heading"),
+      bottomLineText: document.getElementById("bottom-line-text"),
+      summaryCards: document.getElementById("summary-cards"),
+      modelSpotCheck: document.getElementById("model-spot-check"),
+      topModels: document.getElementById("top-models"),
+      topLocations: document.getElementById("top-locations"),
+      decisionRules: document.getElementById("decision-rules"),
+      priusRoot: document.getElementById("prius-root"),
+      shortlistsRoot: document.getElementById("shortlists-root"),
+      filterIntro: document.getElementById("inventory-filter-intro"),
+      status: document.getElementById("page-status"),
+      search: document.getElementById("search"),
+      maxPrice: document.getElementById("max-price"),
+      maxMileage: document.getElementById("max-mileage"),
+      fuel: document.getElementById("fuel"),
+      seller: document.getElementById("seller"),
+      body: document.getElementById("body"),
+      risk: document.getElementById("risk"),
+      sort1: document.getElementById("sort-1"),
+      sort2: document.getElementById("sort-2"),
+      sort3: document.getElementById("sort-3"),
+      reset: document.getElementById("reset-filters"),
+      resultsSummary: document.getElementById("results-summary"),
+      inventoryBody: document.getElementById("inventory-body"),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function badgeClass(risk) {
+      return `badge badge-${String(risk || "unrated").toLowerCase()}`;
+    }
+
+    function populateSelect(select, values, selectedValue = "All", includeAll = true) {
+      const options = [];
+      if (includeAll) {
+        options.push('<option value="All">All</option>');
+      }
+      for (const value of values) {
+        if (typeof value === "string") {
+          options.push(`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`);
+        } else {
+          options.push(`<option value="${escapeHtml(value.value)}">${escapeHtml(value.label)}</option>`);
+        }
+      }
+      select.innerHTML = options.join("");
+      select.value = selectedValue;
+    }
+
+    function renderSummary(data) {
+      const copy = data.copy;
+      const inventoryPage = pageMode === "inventory";
+      document.title = inventoryPage ? copy.inventoryTitle : copy.shortlistTitle;
+      elements.heading.textContent = inventoryPage ? copy.inventoryTitle : copy.shortlistTitle;
+      elements.intro.innerHTML = inventoryPage ? copy.inventoryIntroHtml : copy.shortlistIntroHtml;
+      elements.serviceDisclaimer.textContent = copy.serviceDisclaimer;
+      elements.bottomLineHeading.textContent = inventoryPage ? copy.inventoryBottomLineHeading : copy.shortlistBottomLineHeading;
+      elements.bottomLineText.innerHTML = inventoryPage ? copy.inventoryBottomLineHtml : copy.shortlistBottomLineHtml;
+      elements.summaryCards.innerHTML = (inventoryPage ? data.summary.inventoryCards : data.summary.shortlistCards)
+        .map((card) => `<div class="summary-card"><strong>${escapeHtml(card.value)}</strong>${escapeHtml(card.label)}</div>`)
+        .join("");
+      elements.modelSpotCheck.innerHTML = data.summary.modelSpotCheck.map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`).join("");
+      elements.topModels.innerHTML = data.summary.topModels.map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`).join("");
+      elements.topLocations.innerHTML = data.summary.topLocations.map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`).join("");
+      elements.decisionRules.innerHTML = data.summary.rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("");
+      elements.filterIntro.textContent = copy.inventoryFilterIntro;
+    }
+
+    function renderPriusComparison(rows) {
+      elements.priusRoot.innerHTML = `
+        <section class="panel">
+          <h2>Toyota Prius comparison table</h2>
+          <p class="muted">All Prius rows from the widened inventory collected into one comparable table. Owners and debt are shown where known; the GDS301 owner count is explicitly confirmed via Transportstyrelsen.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Reg</th>
+                  <th>Year</th>
+                  <th>Mileage</th>
+                  <th>Price</th>
+                  <th>Owners</th>
+                  <th>Debt</th>
+                  <th>Location</th>
+                  <th>Seller</th>
+                  <th>Body</th>
+                  <th>Risk</th>
+                  <th>Service due soon</th>
+                  <th>Likely cost</th>
+                  <th>Forum watchouts</th>
+                  <th>Registry note</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => `
+                  <tr>
+                    <td>${escapeHtml(row.reg)}</td>
+                    <td>${escapeHtml(row.year)}</td>
+                    <td>${escapeHtml(row.mileage)}</td>
+                    <td>${escapeHtml(row.price)}</td>
+                    <td>${escapeHtml(row.owners)}</td>
+                    <td>${escapeHtml(row.debt)}</td>
+                    <td>${escapeHtml(row.location)}</td>
+                    <td>${escapeHtml(row.seller)}</td>
+                    <td>${escapeHtml(row.body)}</td>
+                    <td><span class="${badgeClass(row.risk)}">${escapeHtml(row.risk)}</span></td>
+                    <td>${escapeHtml(row.serviceDue)}</td>
+                    <td>${escapeHtml(row.serviceCost)}</td>
+                    <td>${escapeHtml(row.forumWatchouts)}</td>
+                    <td>${escapeHtml(row.registryNote)}</td>
+                    <td><a href="${escapeHtml(row.href)}">Blocket</a></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderShortlists(shortlists) {
+      elements.shortlistsRoot.innerHTML = shortlists.map((shortlist) => `
+        <section class="panel">
+          <h2 id="${escapeHtml(shortlist.slug)}">${escapeHtml(shortlist.title)}</h2>
+          <p class="muted">${escapeHtml(shortlist.description)}</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Car</th>
+                  <th>Year</th>
+                  <th>Mileage</th>
+                  <th>Price</th>
+                  <th>Location</th>
+                  <th>Owners</th>
+                  <th>Reg</th>
+                  <th>Risk</th>
+                  <th>Service due soon</th>
+                  <th>Likely cost</th>
+                  <th>Forum watchouts</th>
+                  <th>Why it is here</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${shortlist.items.map((item) => `
+                  <tr>
+                    <td><strong>${escapeHtml(item.model)}</strong><br><span class="muted">${escapeHtml(item.trim)}</span></td>
+                    <td>${escapeHtml(item.year)}</td>
+                    <td>${escapeHtml(item.mileage)}</td>
+                    <td>${escapeHtml(item.price)}</td>
+                    <td>${escapeHtml(item.location)}</td>
+                    <td>${escapeHtml(item.owners)}</td>
+                    <td>${escapeHtml(item.reg)}</td>
+                    <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
+                    <td>${escapeHtml(item.serviceDue)}</td>
+                    <td>${escapeHtml(item.serviceCost)}</td>
+                    <td>${escapeHtml(item.forumWatchouts)}</td>
+                    <td>${escapeHtml(item.shortlistNote)}</td>
+                    <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `).join("");
+    }
+
+    function matchesSearch(item, query) {
+      if (!query) return true;
+      const haystack = [
+        item.model,
+        item.trim,
+        item.location,
+        item.fuel,
+        item.gearbox,
+        item.seller,
+        item.body,
+        item.reg,
+        item.risk,
+        item.riskNote,
+        item.serviceDue,
+        item.serviceCost,
+        item.forumWatchouts,
+      ].join(" ").toLowerCase();
+      return haystack.includes(query);
+    }
+
+    function compareField(a, b, sortValue) {
+      switch (sortValue) {
+        case "price-desc":
+          return b.priceNum - a.priceNum;
+        case "mileage-asc":
+          return a.mileageMil - b.mileageMil;
+        case "mileage-desc":
+          return b.mileageMil - a.mileageMil;
+        case "year-desc":
+          return b.yearNum - a.yearNum;
+        case "year-asc":
+          return a.yearNum - b.yearNum;
+        case "model-asc":
+          return a.model.localeCompare(b.model);
+        case "location-asc":
+          return a.location.localeCompare(b.location);
+        case "owners-asc":
+          return (a.ownersNum ?? 999) - (b.ownersNum ?? 999);
+        case "price-asc":
+          return a.priceNum - b.priceNum;
+        case "none":
+        default:
+          return 0;
+      }
+    }
+
+    function compareItems(a, b, sortValues) {
+      for (const sortValue of sortValues) {
+        const result = compareField(a, b, sortValue);
+        if (result !== 0) return result;
+      }
+      return a.priceNum - b.priceNum || a.model.localeCompare(b.model);
+    }
+
+    function renderInventoryRows(rows) {
+      elements.resultsSummary.textContent = `${rows.length} of ${appData.inventory.length} cars shown`;
+      elements.inventoryBody.innerHTML = rows.map((item) => `
+        <tr>
+          <td><strong>${escapeHtml(item.model)}</strong><br><span class="muted">${escapeHtml(item.trim)}</span></td>
+          <td>${escapeHtml(item.year)}</td>
+          <td>${escapeHtml(item.mileage)}</td>
+          <td>${escapeHtml(item.price)}</td>
+          <td>${escapeHtml(item.fuel)}</td>
+          <td>${escapeHtml(item.location)}</td>
+          <td>${escapeHtml(item.seller)}</td>
+          <td>${escapeHtml(item.body)}</td>
+          <td>${escapeHtml(item.owners)}</td>
+          <td>${escapeHtml(item.reg)}</td>
+          <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
+          <td>${escapeHtml(item.serviceDue)}</td>
+          <td>${escapeHtml(item.serviceCost)}</td>
+          <td>${escapeHtml(item.forumWatchouts)}</td>
+          <td>${escapeHtml(item.riskNote)}</td>
+          <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
+        </tr>
+      `).join("");
+    }
+
+    function renderInventory() {
+      const query = elements.search.value.trim().toLowerCase();
+      const maxPrice = Number(elements.maxPrice.value || 0);
+      const maxMileage = elements.maxMileage.value ? Number(elements.maxMileage.value) : null;
+      const sortValues = [elements.sort1.value, elements.sort2.value, elements.sort3.value].filter((value) => value && value !== "none");
+
+      const filtered = appData.inventory
+        .filter((item) => !query || matchesSearch(item, query))
+        .filter((item) => !maxPrice || item.priceNum <= maxPrice)
+        .filter((item) => maxMileage === null || item.mileageMil <= maxMileage)
+        .filter((item) => elements.fuel.value === "All" || item.fuel === elements.fuel.value)
+        .filter((item) => elements.seller.value === "All" || item.seller === elements.seller.value)
+        .filter((item) => elements.body.value === "All" || item.body === elements.body.value)
+        .filter((item) => elements.risk.value === "All" || item.risk === elements.risk.value)
+        .sort((a, b) => compareItems(a, b, sortValues));
+
+      renderInventoryRows(filtered);
+    }
+
+    function bindInventoryControls() {
+      if (inventoryControlsBound) return;
+      inventoryControlsBound = true;
+      const listeners = [
+        elements.search,
+        elements.maxPrice,
+        elements.maxMileage,
+        elements.fuel,
+        elements.seller,
+        elements.body,
+        elements.risk,
+        elements.sort1,
+        elements.sort2,
+        elements.sort3,
+      ];
+      listeners.forEach((control) => {
+        control.addEventListener("input", renderInventory);
+        control.addEventListener("change", renderInventory);
+      });
+      elements.reset.addEventListener("click", () => {
+        elements.search.value = "";
+        elements.maxPrice.value = "50000";
+        elements.maxMileage.value = "";
+        elements.fuel.value = "All";
+        elements.seller.value = "All";
+        elements.body.value = "All";
+        elements.risk.value = "All";
+        elements.sort1.value = "price-asc";
+        elements.sort2.value = "none";
+        elements.sort3.value = "none";
+        renderInventory();
+      });
+    }
+
+    async function loadData() {
+      const response = await fetch(DATA_URL);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function init() {
+      try {
+        appData = await loadData();
+        renderSummary(appData);
+        renderPriusComparison(appData.priusComparison);
+        renderShortlists(appData.shortlists);
+
+        if (pageMode === "inventory") {
+          populateSelect(elements.fuel, appData.filters.fuels);
+          populateSelect(elements.seller, appData.filters.sellers);
+          populateSelect(elements.body, appData.filters.bodies);
+          populateSelect(elements.risk, appData.filters.risks);
+          populateSelect(elements.sort1, appData.filters.sortOptions, "price-asc", false);
+          populateSelect(elements.sort2, appData.filters.sortOptions, "none", false);
+          populateSelect(elements.sort3, appData.filters.sortOptions, "none", false);
+          bindInventoryControls();
+          renderInventory();
+        }
+
+        elements.status.textContent = "";
+      } catch (error) {
+        elements.status.textContent = `Could not load the page data: ${error.message}`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
