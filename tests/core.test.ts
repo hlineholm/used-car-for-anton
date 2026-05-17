@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   compareItems,
   dedupeSortValues,
@@ -8,6 +11,7 @@ import {
   parseBrandModel,
   parseSearchQuery,
   projectInventoryItem,
+  queryInventory,
   type InventoryFilters,
   type InventoryItem,
 } from "../src/core.js";
@@ -688,4 +692,135 @@ test("filterAndSortInventory covers filter and sort combinations for structured 
       assert.deepEqual(actual, expected, `${filterCase.name} + ${sortCase.value}`);
     }
   }
+});
+
+test("queryInventory derives rows and global filter options from one state", () => {
+  const items = [
+    makeStructuredItem({
+      reg: "AAA111",
+      brand: "Toyota",
+      modelName: "Prius",
+      modelSeries: "XW50",
+      engine: "1.8 Hybrid",
+      trim: "Active",
+      priceNum: 40000,
+      mileageMil: 9000,
+      yearNum: 2023,
+      ownersNum: 1,
+      fuel: "Hybrid bensin",
+      gearbox: "Automat",
+      body: "Halvkombi",
+      location: "Uppsala",
+      region: "Uppsala län",
+      distance: "0-25 km",
+      seller: "Handlare",
+      risk: "Lower",
+      riskKnown: true,
+      serviceDue: "Soon",
+      serviceCostMin: 3000,
+      serviceCostBucket: "0-5k",
+      debtStatus: "No",
+      registryVerified: true,
+      priceBucket: "<=50k",
+      mileageBucket: "<=10k",
+      ageBucket: "<=5 år",
+      ownersBucket: "1",
+      pricePerMil: 4.44,
+      pricePerMilBucket: "2,5-5 kr/mil",
+    }),
+    makeStructuredItem({
+      reg: "BBB222",
+      brand: "Toyota",
+      modelName: "Aygo",
+      modelSeries: "AB1",
+      engine: "1.0",
+      trim: "X",
+      priceNum: 35000,
+      mileageMil: 12000,
+      yearNum: 2018,
+      ownersNum: 2,
+      fuel: "Bensin",
+      gearbox: "Manuell",
+      body: "Halvkombi",
+      location: "Enköping",
+      region: "Uppsala län",
+      distance: "25-50 km",
+      seller: "Privat",
+      risk: null,
+      riskKnown: false,
+      serviceDue: "Now",
+      serviceCostMin: 6000,
+      serviceCostBucket: "5-10k",
+      debtStatus: "Unknown",
+      registryVerified: false,
+      priceBucket: "<=50k",
+      mileageBucket: "10-20k",
+      ageBucket: "5-10 år",
+      ownersBucket: "2",
+      pricePerMil: 2.91,
+      pricePerMilBucket: "2,5-5 kr/mil",
+    }),
+    makeStructuredItem({
+      reg: "CCC333",
+      brand: "Honda",
+      modelName: "Jazz",
+      modelSeries: "GE",
+      engine: "1.4",
+      trim: "Comfort",
+      priceNum: 38000,
+      mileageMil: 15000,
+      yearNum: 2016,
+      ownersNum: 3,
+      fuel: "Bensin",
+      gearbox: "Automat",
+      body: "Halvkombi",
+      location: "Västerås",
+      region: "Västmanlands län",
+      distance: "50-100 km",
+      seller: "Privat",
+      risk: "Medium",
+      riskKnown: true,
+      serviceDue: "Later",
+      serviceCostMin: 4000,
+      serviceCostBucket: "0-5k",
+      debtStatus: "Yes",
+      registryVerified: true,
+      priceBucket: "<=50k",
+      mileageBucket: "10-20k",
+      ageBucket: "5-10 år",
+      ownersBucket: "3",
+      pricePerMil: 2.53,
+      pricePerMilBucket: "2,5-5 kr/mil",
+    }),
+  ];
+
+  const result = queryInventory(
+    items,
+    {
+      brand: "Toyota",
+      riskStatus: "All",
+      gearbox: "Automat",
+    },
+    ["price-asc"],
+  );
+
+  assert.deepEqual(result.rows.map((item) => item.reg), ["AAA111"]);
+  assert.deepEqual(result.options.model.map((option) => [option.value, option.count]), [["Prius", 1]]);
+  assert.deepEqual(result.options.brand.map((option) => [option.value, option.count]), [
+    ["Honda", 1],
+    ["Toyota", 1],
+  ]);
+  assert.deepEqual(result.options.riskStatus.map((option) => [option.value, option.count]), [["known", 1]]);
+  assert.deepEqual(result.options.location.map((option) => [option.value, option.count]), [["Uppsala", 1]]);
+});
+
+test("generated data exposes an explicit no-sort option", () => {
+  const testDir = path.dirname(fileURLToPath(import.meta.url));
+  const repoRoot = path.resolve(testDir, "..", "..");
+  const dataPath = path.join(repoRoot, "processed-data.json");
+  const data = JSON.parse(readFileSync(dataPath, "utf8")) as {
+    filters?: { sortOptions?: Array<{ value?: string; label?: string }> };
+  };
+
+  assert.deepEqual(data.filters?.sortOptions?.[0], { value: "none", label: "Ingen sortering" });
 });

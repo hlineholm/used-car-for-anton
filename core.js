@@ -49,6 +49,32 @@ const PRICE_PER_MIL_BUCKET_ORDER = [
     "Okänt",
 ];
 const DEBT_STATUS_ORDER = ["No", "Yes", "Unknown"];
+const collator = new Intl.Collator("sv", { sensitivity: "base" });
+const INVENTORY_SELECT_FILTER_KEYS = [
+    "brand",
+    "model",
+    "series",
+    "engine",
+    "trim",
+    "location",
+    "region",
+    "distance",
+    "fuel",
+    "gearbox",
+    "seller",
+    "body",
+    "risk",
+    "riskStatus",
+    "serviceDue",
+    "serviceCost",
+    "priceBucket",
+    "mileageBucket",
+    "ageBucket",
+    "ownersBucket",
+    "pricePerMilBucket",
+    "debtStatus",
+    "registryVerified",
+];
 function bucketLabel(value, ranges, unknownLabel = "Okänt") {
     if (value == null || !Number.isFinite(value))
         return unknownLabel;
@@ -78,6 +104,105 @@ function compareNullableNumbers(aValue, bValue, descending = false) {
 }
 function compareProjectedText(aValue, bValue, descending = false) {
     return descending ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+}
+function parseBucketNumber(value) {
+    const normalizedValue = String(value);
+    const matches = normalizedValue.match(/\d+(?:[ .,\u00a0]\d+)*/g);
+    if (!matches?.length)
+        return Number.POSITIVE_INFINITY;
+    const token = normalizedValue.includes("-") && matches.length > 1 ? matches[matches.length - 1] : matches[0];
+    const normalized = token.replace(/[ .\u00a0]/g, "").replace(",", ".");
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed))
+        return Number.POSITIVE_INFINITY;
+    return normalizedValue.trim().startsWith(">") ? parsed + 1 : parsed;
+}
+function compareDynamicBucketValues(aValue, bValue, descending = false) {
+    const a = String(aValue || "Okänt");
+    const b = String(bValue || "Okänt");
+    if (a === "Okänt" && b === "Okänt")
+        return 0;
+    if (a === "Okänt")
+        return 1;
+    if (b === "Okänt")
+        return -1;
+    const result = parseBucketNumber(a) - parseBucketNumber(b);
+    return descending ? -result : result;
+}
+function getInventoryFilterValue(projected, key) {
+    switch (key) {
+        case "brand":
+            return projected.brand;
+        case "model":
+            return projected.modelName;
+        case "series":
+            return projected.modelSeries;
+        case "engine":
+            return projected.engine;
+        case "trim":
+            return projected.trim;
+        case "location":
+            return projected.location;
+        case "region":
+            return projected.region;
+        case "distance":
+            return projected.distanceBucketFromUppsala;
+        case "fuel":
+            return projected.fuel;
+        case "gearbox":
+            return projected.gearboxDriveability;
+        case "seller":
+            return projected.sellerType;
+        case "body":
+            return projected.bodyType;
+        case "risk":
+            return projected.risk ?? "Unknown";
+        case "riskStatus":
+            return projected.riskKnown ? "known" : "unknown";
+        case "serviceDue":
+            return projected.serviceDueLevel;
+        case "serviceCost":
+            return projected.serviceCostBucket;
+        case "priceBucket":
+            return projected.priceBucket;
+        case "mileageBucket":
+            return projected.mileageBucket;
+        case "ageBucket":
+            return projected.ageBucket;
+        case "ownersBucket":
+            return projected.ownersBucket;
+        case "pricePerMilBucket":
+            return projected.pricePerMilBucket;
+        case "debtStatus":
+            return projected.debtStatus;
+        case "registryVerified":
+            return String(projected.registryVerified);
+    }
+}
+function compareFilterOptionValues(key, aValue, bValue) {
+    switch (key) {
+        case "distance":
+            return compareOrderedValues(aValue, bValue, DISTANCE_BUCKET_ORDER);
+        case "risk":
+            return compareOrderedValues(aValue, bValue, ["Lower", "Medium", "Higher", "Avoid", "Unknown"]);
+        case "riskStatus":
+            return compareOrderedValues(aValue, bValue, ["known", "unknown"]);
+        case "serviceDue":
+            return compareOrderedValues(aValue, bValue, ["Now", "Soon", "Later", "Unknown"]);
+        case "debtStatus":
+            return compareOrderedValues(aValue, bValue, DEBT_STATUS_ORDER);
+        case "registryVerified":
+            return compareOrderedValues(aValue, bValue, ["true", "false"]);
+        case "ownersBucket":
+            return compareOrderedValues(aValue, bValue, OWNERS_BUCKET_ORDER);
+        case "priceBucket":
+        case "mileageBucket":
+        case "ageBucket":
+        case "pricePerMilBucket":
+            return compareDynamicBucketValues(aValue, bValue);
+        default:
+            return collator.compare(aValue, bValue);
+    }
 }
 export function pricePerMilBucket(value) {
     return bucketLabel(value, PRICE_PER_MIL_BUCKETS);
@@ -355,25 +480,25 @@ export function compareField(a, b, sortValue) {
         case "service-cost-desc":
             return compareNullableNumbers(projectedA.serviceCostMin, projectedB.serviceCostMin, true);
         case "price-bucket-asc":
-            return compareOrderedValues(projectedA.priceBucket, projectedB.priceBucket, PRICE_BUCKET_ORDER);
+            return compareDynamicBucketValues(projectedA.priceBucket, projectedB.priceBucket);
         case "price-bucket-desc":
-            return compareOrderedValues(projectedA.priceBucket, projectedB.priceBucket, PRICE_BUCKET_ORDER, true);
+            return compareDynamicBucketValues(projectedA.priceBucket, projectedB.priceBucket, true);
         case "mileage-bucket-asc":
-            return compareOrderedValues(projectedA.mileageBucket, projectedB.mileageBucket, MILEAGE_BUCKET_ORDER);
+            return compareDynamicBucketValues(projectedA.mileageBucket, projectedB.mileageBucket);
         case "mileage-bucket-desc":
-            return compareOrderedValues(projectedA.mileageBucket, projectedB.mileageBucket, MILEAGE_BUCKET_ORDER, true);
+            return compareDynamicBucketValues(projectedA.mileageBucket, projectedB.mileageBucket, true);
         case "age-bucket-asc":
-            return compareOrderedValues(projectedA.ageBucket, projectedB.ageBucket, AGE_BUCKET_ORDER);
+            return compareDynamicBucketValues(projectedA.ageBucket, projectedB.ageBucket);
         case "age-bucket-desc":
-            return compareOrderedValues(projectedA.ageBucket, projectedB.ageBucket, AGE_BUCKET_ORDER, true);
+            return compareDynamicBucketValues(projectedA.ageBucket, projectedB.ageBucket, true);
         case "owners-bucket-asc":
             return compareOrderedValues(projectedA.ownersBucket, projectedB.ownersBucket, OWNERS_BUCKET_ORDER);
         case "owners-bucket-desc":
             return compareOrderedValues(projectedA.ownersBucket, projectedB.ownersBucket, OWNERS_BUCKET_ORDER, true);
         case "price-per-mil-bucket-asc":
-            return compareOrderedValues(projectedA.pricePerMilBucket, projectedB.pricePerMilBucket, PRICE_PER_MIL_BUCKET_ORDER);
+            return compareDynamicBucketValues(projectedA.pricePerMilBucket, projectedB.pricePerMilBucket);
         case "price-per-mil-bucket-desc":
-            return compareOrderedValues(projectedA.pricePerMilBucket, projectedB.pricePerMilBucket, PRICE_PER_MIL_BUCKET_ORDER, true);
+            return compareDynamicBucketValues(projectedA.pricePerMilBucket, projectedB.pricePerMilBucket, true);
         case "debt-no-first":
             return compareOrderedValues(projectedA.debtStatus, projectedB.debtStatus, DEBT_STATUS_ORDER);
         case "debt-yes-first":
@@ -404,42 +529,73 @@ export function compareItems(a, b, sortValues) {
 function matchesSelectFilter(selected, actual) {
     return !selected || selected === "All" || actual === selected;
 }
-export function matchesInventoryFilters(item, filters) {
+export function matchesInventoryFilters(item, filters, excludedKey) {
     const projected = projectInventoryItem(item);
     const tokenGroups = parseSearchQuery(filters.search ?? "");
     const riskStatus = filters.riskStatus ?? "All";
     const registryVerified = filters.registryVerified ?? "All";
-    return (matchesSelectFilter(filters.brand, projected.brand) &&
-        matchesSelectFilter(filters.model, projected.modelName) &&
-        matchesSelectFilter(filters.series, projected.modelSeries) &&
-        matchesSelectFilter(filters.engine, projected.engine) &&
-        matchesSelectFilter(filters.trim, projected.trim) &&
-        matchesSelectFilter(filters.location, projected.location) &&
-        matchesSelectFilter(filters.region, projected.region) &&
-        matchesSelectFilter(filters.distance, projected.distanceBucketFromUppsala) &&
+    return ((excludedKey === "brand" || matchesSelectFilter(filters.brand, projected.brand)) &&
+        (excludedKey === "model" || matchesSelectFilter(filters.model, projected.modelName)) &&
+        (excludedKey === "series" || matchesSelectFilter(filters.series, projected.modelSeries)) &&
+        (excludedKey === "engine" || matchesSelectFilter(filters.engine, projected.engine)) &&
+        (excludedKey === "trim" || matchesSelectFilter(filters.trim, projected.trim)) &&
+        (excludedKey === "location" || matchesSelectFilter(filters.location, projected.location)) &&
+        (excludedKey === "region" || matchesSelectFilter(filters.region, projected.region)) &&
+        (excludedKey === "distance" || matchesSelectFilter(filters.distance, projected.distanceBucketFromUppsala)) &&
         matchesSearch(item, tokenGroups) &&
         (filters.maxPrice == null || (projected.priceNum != null && projected.priceNum <= filters.maxPrice)) &&
         (filters.maxMileage == null || (projected.mileageMil != null && projected.mileageMil <= filters.maxMileage)) &&
-        matchesSelectFilter(filters.fuel, projected.fuel) &&
-        matchesSelectFilter(filters.gearbox, projected.gearboxDriveability) &&
-        matchesSelectFilter(filters.seller, projected.sellerType) &&
-        matchesSelectFilter(filters.body, projected.bodyType) &&
-        matchesSelectFilter(filters.risk, projected.risk ?? "Unknown") &&
-        (riskStatus === "All" ||
+        (excludedKey === "fuel" || matchesSelectFilter(filters.fuel, projected.fuel)) &&
+        (excludedKey === "gearbox" || matchesSelectFilter(filters.gearbox, projected.gearboxDriveability)) &&
+        (excludedKey === "seller" || matchesSelectFilter(filters.seller, projected.sellerType)) &&
+        (excludedKey === "body" || matchesSelectFilter(filters.body, projected.bodyType)) &&
+        (excludedKey === "risk" || matchesSelectFilter(filters.risk, projected.risk ?? "Unknown")) &&
+        (excludedKey === "riskStatus" ||
+            riskStatus === "All" ||
             (riskStatus === "known" && projected.riskKnown) ||
             (riskStatus === "unknown" && !projected.riskKnown)) &&
-        matchesSelectFilter(filters.serviceDue, projected.serviceDueLevel) &&
-        matchesSelectFilter(filters.serviceCost, projected.serviceCostBucket) &&
-        matchesSelectFilter(filters.priceBucket, projected.priceBucket) &&
-        matchesSelectFilter(filters.mileageBucket, projected.mileageBucket) &&
-        matchesSelectFilter(filters.ageBucket, projected.ageBucket) &&
-        matchesSelectFilter(filters.ownersBucket, projected.ownersBucket) &&
-        matchesSelectFilter(filters.pricePerMilBucket, projected.pricePerMilBucket) &&
-        matchesSelectFilter(filters.debtStatus, projected.debtStatus) &&
-        (registryVerified === "All" ||
+        (excludedKey === "serviceDue" || matchesSelectFilter(filters.serviceDue, projected.serviceDueLevel)) &&
+        (excludedKey === "serviceCost" || matchesSelectFilter(filters.serviceCost, projected.serviceCostBucket)) &&
+        (excludedKey === "priceBucket" || matchesSelectFilter(filters.priceBucket, projected.priceBucket)) &&
+        (excludedKey === "mileageBucket" || matchesSelectFilter(filters.mileageBucket, projected.mileageBucket)) &&
+        (excludedKey === "ageBucket" || matchesSelectFilter(filters.ageBucket, projected.ageBucket)) &&
+        (excludedKey === "ownersBucket" || matchesSelectFilter(filters.ownersBucket, projected.ownersBucket)) &&
+        (excludedKey === "pricePerMilBucket" || matchesSelectFilter(filters.pricePerMilBucket, projected.pricePerMilBucket)) &&
+        (excludedKey === "debtStatus" || matchesSelectFilter(filters.debtStatus, projected.debtStatus)) &&
+        (excludedKey === "registryVerified" ||
+            registryVerified === "All" ||
             (registryVerified === "true" && projected.registryVerified) ||
             (registryVerified === "false" && !projected.registryVerified)));
 }
 export function filterAndSortInventory(items, filters, sortValues) {
     return items.filter((item) => matchesInventoryFilters(item, filters)).sort((a, b) => compareItems(a, b, sortValues));
+}
+function buildInventoryFilterOptions(items, filters) {
+    const options = {};
+    for (const key of INVENTORY_SELECT_FILTER_KEYS) {
+        const counts = new Map();
+        for (const item of items) {
+            if (!matchesInventoryFilters(item, filters, key))
+                continue;
+            const value = getInventoryFilterValue(projectInventoryItem(item), key);
+            counts.set(value, (counts.get(value) ?? 0) + 1);
+        }
+        const selectedValue = filters[key];
+        if (selectedValue && selectedValue !== "All" && !counts.has(selectedValue)) {
+            counts.set(selectedValue, 0);
+        }
+        options[key] = [...counts.entries()]
+            .map(([value, count]) => ({ value, count }))
+            .sort((a, b) => compareFilterOptionValues(key, a.value, b.value));
+    }
+    return options;
+}
+export function queryInventory(items, filters, sortValues) {
+    const rows = filterAndSortInventory(items, filters, sortValues);
+    return {
+        rows,
+        totalCount: items.length,
+        filteredCount: rows.length,
+        options: buildInventoryFilterOptions(items, filters),
+    };
 }

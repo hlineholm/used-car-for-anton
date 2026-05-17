@@ -885,6 +885,7 @@ const serviceCostBuckets = ["0-5k", "5-10k", "10-20k", "20k+", "Okänt"];
 const debtStatuses = ["No", "Yes", "Unknown"];
 const registryVerifiedOptions = ["true", "false"];
 const sortOptions = [
+  { value: "none", label: "Ingen sortering" },
   { value: "price-asc", label: "Pris lågt till högt" },
   { value: "price-desc", label: "Pris högt till lågt" },
   { value: "price-bucket-asc", label: "Prisintervall lågt till högt" },
