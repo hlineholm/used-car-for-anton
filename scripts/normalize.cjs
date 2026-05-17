@@ -3,7 +3,8 @@ const path = require("path");
 
 const inPath = path.resolve(__dirname, "..", "data.json");
 const outDir = path.resolve(__dirname, "..", "dist");
-const outPath = path.join(outDir, "processed-data.json");
+const distOutPath = path.join(outDir, "processed-data.json");
+const rootOutPath = path.resolve(__dirname, "..", "processed-data.json");
 
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
 
@@ -918,5 +919,7 @@ const out = {
   inventory: processed,
 };
 
-fs.writeFileSync(outPath, JSON.stringify(out, null, 2), "utf8");
-console.log("Wrote", outPath, "items:", processed.length);
+const json = JSON.stringify(out, null, 2);
+fs.writeFileSync(distOutPath, json, "utf8");
+fs.writeFileSync(rootOutPath, json, "utf8");
+console.log("Wrote", distOutPath, "and", rootOutPath, "items:", processed.length);

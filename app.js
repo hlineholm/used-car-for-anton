@@ -1,5 +1,5 @@
 import { dedupeSortValues, filterAndSortInventory, parseOptionalNumber, projectInventoryItem, } from "./core.js";
-const DATA_URL = "dist/processed-data.json";
+const DATA_URL = "processed-data.json";
 const DEFAULT_MAX_PRICE = 50000;
 const pageMode = "inventory";
 const PAGE_TITLE = "Bilar";
