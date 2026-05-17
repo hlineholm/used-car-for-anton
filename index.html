@@ -45,9 +45,9 @@
       font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     main {
-      max-width: 1600px;
+      max-width: 2200px;
       margin: 0 auto;
-      padding: 32px 20px 64px;
+      padding: 32px clamp(18px, 2vw, 40px) 64px;
     }
     h1, h2, h3 { line-height: 1.2; }
     h1 { margin: 0 0 8px; }
@@ -64,7 +64,7 @@
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 12px;
       margin-top: 16px;
     }
@@ -134,18 +134,113 @@
       overflow-x: auto;
       margin-top: 14px;
     }
+    .car-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .car-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .car-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .car-card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .car-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+    .car-meta div {
+      min-width: 0;
+    }
+    .car-meta .label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 2px;
+    }
+    .car-note {
+      margin: 0;
+    }
+    @media (min-width: 1400px) {
+      .summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .car-grid {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      }
+    }
+    @media (min-width: 1800px) {
+      .car-grid {
+        grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      }
+      p, li {
+        max-width: 110ch;
+      }
+    }
     table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: collapse;
-      min-width: 1180px;
+      table-layout: auto;
     }
     th, td {
       border: 1px solid var(--border);
       padding: 10px 12px;
       vertical-align: top;
       text-align: left;
+      white-space: normal;
     }
     th { background: var(--header); }
+    .inventory-only table th:nth-child(1),
+    .inventory-only table td:nth-child(1) {
+      min-width: 240px;
+    }
+    .inventory-only table th:nth-child(12),
+    .inventory-only table td:nth-child(12) {
+      min-width: 260px;
+    }
+    .inventory-only table th:nth-child(13),
+    .inventory-only table td:nth-child(13) {
+      min-width: 160px;
+    }
+    .inventory-only table th:nth-child(14),
+    .inventory-only table td:nth-child(14),
+    .inventory-only table th:nth-child(15),
+    .inventory-only table td:nth-child(15) {
+      min-width: 260px;
+    }
+    .inventory-only table th:nth-child(16),
+    .inventory-only table td:nth-child(16) {
+      min-width: 120px;
+    }
+    .inventory-only table td:nth-child(2),
+    .inventory-only table td:nth-child(3),
+    .inventory-only table td:nth-child(4),
+    .inventory-only table td:nth-child(5),
+    .inventory-only table td:nth-child(8),
+    .inventory-only table td:nth-child(9),
+    .inventory-only table td:nth-child(10),
+    .inventory-only table td:nth-child(11),
+    .inventory-only table td:nth-child(16) {
+      white-space: nowrap;
+    }
     ul.compact {
       margin: 0;
       padding-left: 18px;
@@ -243,31 +338,7 @@
         <button id="reset-filters" type="button">Reset filters</button>
         <span class="muted" id="results-summary"></span>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Year</th>
-              <th>Mileage</th>
-              <th>Price</th>
-              <th>Fuel</th>
-              <th>Location</th>
-              <th>Seller</th>
-              <th>Body</th>
-              <th>Owners</th>
-              <th>Reg</th>
-              <th>Risk</th>
-              <th>Service due soon</th>
-              <th>Likely cost</th>
-              <th>Forum watchouts</th>
-              <th>Why flagged this way</th>
-              <th>Link</th>
-            </tr>
-          </thead>
-          <tbody id="inventory-body"></tbody>
-        </table>
-      </div>
+      <div class="car-grid" id="inventory-body"></div>
     </section>
 
     <p class="status muted" id="page-status">Loading page data...</p>
@@ -517,24 +588,31 @@
     function renderInventoryRows(rows) {
       elements.resultsSummary.textContent = `${rows.length} of ${appData.inventory.length} cars shown`;
       elements.inventoryBody.innerHTML = rows.map((item) => `
-        <tr>
-          <td><strong>${escapeHtml(item.model)}</strong><br><span class="muted">${escapeHtml(item.trim)}</span></td>
-          <td>${escapeHtml(item.year)}</td>
-          <td>${escapeHtml(item.mileage)}</td>
-          <td>${escapeHtml(item.price)}</td>
-          <td>${escapeHtml(item.fuel)}</td>
-          <td>${escapeHtml(item.location)}</td>
-          <td>${escapeHtml(item.seller)}</td>
-          <td>${escapeHtml(item.body)}</td>
-          <td>${escapeHtml(item.owners)}</td>
-          <td>${escapeHtml(item.reg)}</td>
-          <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
-          <td>${escapeHtml(item.serviceDue)}</td>
-          <td>${escapeHtml(item.serviceCost)}</td>
-          <td>${escapeHtml(item.forumWatchouts)}</td>
-          <td>${escapeHtml(item.riskNote)}</td>
-          <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
-        </tr>
+        <article class="car-card">
+          <div class="car-card-header">
+            <div>
+              <h3>${escapeHtml(item.model)}</h3>
+              <div class="muted">${escapeHtml(item.trim)}</div>
+            </div>
+            <span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span>
+          </div>
+          <div class="car-meta">
+            <div><span class="label">Year</span>${escapeHtml(item.year)}</div>
+            <div><span class="label">Mileage</span>${escapeHtml(item.mileage)}</div>
+            <div><span class="label">Price</span>${escapeHtml(item.price)}</div>
+            <div><span class="label">Fuel</span>${escapeHtml(item.fuel)}</div>
+            <div><span class="label">Location</span>${escapeHtml(item.location)}</div>
+            <div><span class="label">Seller</span>${escapeHtml(item.seller)}</div>
+            <div><span class="label">Body</span>${escapeHtml(item.body)}</div>
+            <div><span class="label">Owners</span>${escapeHtml(item.owners)}</div>
+            <div><span class="label">Reg</span>${escapeHtml(item.reg)}</div>
+            <div><span class="label">Link</span><a href="${escapeHtml(item.href)}">Blocket</a></div>
+          </div>
+          <div><span class="label">Service due soon</span>${escapeHtml(item.serviceDue)}</div>
+          <div><span class="label">Likely cost</span>${escapeHtml(item.serviceCost)}</div>
+          <div><span class="label">Forum watchouts</span><p class="car-note">${escapeHtml(item.forumWatchouts)}</p></div>
+          <div><span class="label">Why flagged this way</span><p class="car-note">${escapeHtml(item.riskNote)}</p></div>
+        </article>
       `).join("");
     }
 
