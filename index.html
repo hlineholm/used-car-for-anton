@@ -380,8 +380,20 @@
       </div>
       <div class="filters">
         <div>
-          <label for="search">Search</label>
-          <input id="search" type="text" placeholder="Prius, Uppsala, CVT, KGC602...">
+          <label for="brand">Brand</label>
+          <select id="brand"></select>
+        </div>
+        <div>
+          <label for="model">Model</label>
+          <select id="model"></select>
+        </div>
+        <div>
+          <label for="location">Location</label>
+          <select id="location"></select>
+        </div>
+        <div>
+          <label for="search">Text search (optional)</label>
+          <input id="search" type="text" placeholder="Trim, reg, notes... (supports OR with |)">
         </div>
         <div>
           <label for="max-price">Max price (SEK)</label>
@@ -472,6 +484,9 @@
       viewCards: document.getElementById("view-cards"),
       viewList: document.getElementById("view-list"),
       status: document.getElementById("page-status"),
+      brand: document.getElementById("brand"),
+      model: document.getElementById("model"),
+      location: document.getElementById("location"),
       search: document.getElementById("search"),
       maxPrice: document.getElementById("max-price"),
       maxMileage: document.getElementById("max-mileage"),
@@ -490,6 +505,8 @@
     };
     let inventoryView = "list";
     let sortLabelByValue = {};
+    let modelOptionsByBrand = new Map();
+    let allModelOptions = [];
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -553,6 +570,53 @@
       }
       select.innerHTML = options.join("");
       select.value = selectedValue;
+      if (!Array.from(select.options).some((option) => option.value === select.value)) {
+        select.value = includeAll ? "All" : (select.options[0]?.value || "");
+      }
+    }
+
+    function parseBrandModel(modelValue) {
+      const clean = String(modelValue ?? "").trim();
+      if (!clean) return { brand: "Unknown", modelName: "Unknown" };
+      const [brand, ...rest] = clean.split(/\s+/);
+      return {
+        brand,
+        modelName: rest.length ? rest.join(" ") : clean,
+      };
+    }
+
+    function buildStructuredFilterCatalog() {
+      const brands = new Set();
+      const locations = new Set();
+      modelOptionsByBrand = new Map();
+
+      appData.inventory.forEach((item) => {
+        const { brand, modelName } = parseBrandModel(item.model);
+        item.brand = brand;
+        item.modelName = modelName;
+        brands.add(brand);
+        locations.add(item.location);
+        if (!modelOptionsByBrand.has(brand)) {
+          modelOptionsByBrand.set(brand, new Set());
+        }
+        modelOptionsByBrand.get(brand).add(modelName);
+      });
+
+      const collator = new Intl.Collator("sv", { sensitivity: "base" });
+      const brandOptions = [...brands].sort((a, b) => collator.compare(a, b));
+      const locationOptions = [...locations].sort((a, b) => collator.compare(a, b));
+      allModelOptions = [...new Set(appData.inventory.map((item) => item.modelName))].sort((a, b) => collator.compare(a, b));
+
+      for (const [brand, modelSet] of modelOptionsByBrand.entries()) {
+        modelOptionsByBrand.set(brand, [...modelSet].sort((a, b) => collator.compare(a, b)));
+      }
+
+      return { brandOptions, locationOptions };
+    }
+
+    function updateModelOptions(selectedBrand, selectedModel = "All") {
+      const modelOptions = selectedBrand === "All" ? allModelOptions : (modelOptionsByBrand.get(selectedBrand) || []);
+      populateSelect(elements.model, modelOptions, selectedModel, true);
     }
 
     function renderSummary(data) {
@@ -575,6 +639,13 @@
     }
 
     function setFilters(values) {
+      if (values.brand !== undefined) {
+        elements.brand.value = values.brand;
+        updateModelOptions(values.brand, values.model ?? "All");
+      } else if (values.model !== undefined) {
+        updateModelOptions(elements.brand.value, values.model);
+      }
+      if (values.location !== undefined) elements.location.value = values.location;
       if (values.search !== undefined) elements.search.value = values.search;
       if (values.maxPrice !== undefined) elements.maxPrice.value = values.maxPrice;
       if (values.maxMileage !== undefined) elements.maxMileage.value = values.maxMileage;
@@ -591,12 +662,12 @@
 
     function renderShortcuts() {
       const shortcuts = [
-        { id: "prius", title: "Prius", note: "Best reliability-first bet.", values: { search: "Prius", sort1: "price-asc" } },
-        { id: "jazz", title: "Jazz", note: "Good CVT family pick.", values: { search: "Jazz", sort1: "price-asc" } },
-        { id: "city", title: "Aygo / 107 / C1", note: "Small city-car cluster.", values: { search: "Aygo | 107 | C1", sort1: "price-asc" } },
-        { id: "avoid", title: "Avoid list", note: "Yaris/Auris/207/Polo warnings.", values: { search: "Yaris | Auris | 207 | Polo", risk: "Avoid", sort1: "price-asc" } },
-        { id: "lowmiles", title: "Low mileage", note: "Pull the easiest-looking cars first.", values: { maxMileage: 15000, sort1: "mileage-asc" } },
-        { id: "clear", title: "Reset", note: "Back to full inventory.", values: { search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "none", sort2: "none", sort3: "none" } },
+        { id: "prius", title: "Prius", note: "Best reliability-first bet.", values: { brand: "Toyota", model: "Prius", location: "All", search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "price-asc", sort2: "none", sort3: "none" } },
+        { id: "jazz", title: "Jazz", note: "Good CVT family pick.", values: { brand: "Honda", model: "Jazz", location: "All", search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "price-asc", sort2: "none", sort3: "none" } },
+        { id: "city", title: "Aygo / 107 / C1", note: "Small city-car cluster.", values: { brand: "All", model: "All", location: "All", search: "Aygo | 107 | C1", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "price-asc", sort2: "none", sort3: "none" } },
+        { id: "avoid", title: "Avoid list", note: "Yaris/Auris/207/Polo warnings.", values: { brand: "All", model: "All", location: "All", search: "Yaris | Auris | 207 | Polo", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "Avoid", unrated: "exclude", sort1: "price-asc", sort2: "none", sort3: "none" } },
+        { id: "lowmiles", title: "Low mileage", note: "Pull the easiest-looking cars first.", values: { brand: "All", model: "All", location: "All", search: "", maxPrice: "50000", maxMileage: 15000, fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "mileage-asc", sort2: "none", sort3: "none" } },
+        { id: "clear", title: "Reset", note: "Back to full inventory.", values: { brand: "All", model: "All", location: "All", search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "none", sort2: "none", sort3: "none" } },
       ];
       elements.shortcutRoot.innerHTML = `<div class="shortcut-grid">${shortcuts
         .map(
@@ -670,6 +741,9 @@
 
     function describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage) {
       const parts = [];
+      if (elements.brand.value !== "All") parts.push(`brand: ${elements.brand.value}`);
+      if (elements.model.value !== "All") parts.push(`model: ${elements.model.value}`);
+      if (elements.location.value !== "All") parts.push(`location: ${elements.location.value}`);
       if (tokenGroups.length) parts.push(`search: ${elements.search.value.trim()}`);
       if (maxPrice !== null && maxPrice !== DEFAULT_MAX_PRICE) parts.push(`max price: ${Math.round(maxPrice)}`);
       if (maxMileage !== null) parts.push(`max mileage: ${Math.round(maxMileage)}`);
@@ -847,6 +921,9 @@
       const includeUnrated = elements.unrated.value === "include" || elements.risk.value === "Unrated";
       const visibleInventory = includeUnrated ? appData.inventory : appData.inventory.filter((item) => item.risk !== "Unrated");
       const filtered = visibleInventory
+        .filter((item) => elements.brand.value === "All" || item.brand === elements.brand.value)
+        .filter((item) => elements.model.value === "All" || item.modelName === elements.model.value)
+        .filter((item) => elements.location.value === "All" || item.location === elements.location.value)
         .filter((item) => matchesSearch(item, tokenGroups))
         .filter((item) => maxPrice === null || item.priceNum <= maxPrice)
         .filter((item) => maxMileage === null || item.mileageMil <= maxMileage)
@@ -867,6 +944,8 @@
       if (inventoryControlsBound) return;
       inventoryControlsBound = true;
       const listeners = [
+        elements.model,
+        elements.location,
         elements.search,
         elements.maxPrice,
         elements.maxMileage,
@@ -883,7 +962,14 @@
         control.addEventListener("input", renderInventory);
         control.addEventListener("change", renderInventory);
       });
+      elements.brand.addEventListener("change", () => {
+        updateModelOptions(elements.brand.value, "All");
+        renderInventory();
+      });
       elements.reset.addEventListener("click", () => {
+        elements.brand.value = "All";
+        updateModelOptions("All", "All");
+        elements.location.value = "All";
         elements.search.value = "";
         elements.maxPrice.value = "50000";
         elements.maxMileage.value = "";
@@ -922,6 +1008,10 @@
         renderShortcuts();
 
         if (pageMode === "inventory") {
+          const { brandOptions, locationOptions } = buildStructuredFilterCatalog();
+          populateSelect(elements.brand, brandOptions);
+          populateSelect(elements.location, locationOptions);
+          updateModelOptions("All", "All");
           populateSelect(elements.fuel, appData.filters.fuels);
           populateSelect(elements.seller, appData.filters.sellers);
           populateSelect(elements.body, appData.filters.bodies);
