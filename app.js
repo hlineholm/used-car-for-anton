@@ -73,7 +73,7 @@ const activeControlSpecs = [
         control: elements.maxPrice,
         isActive: () => {
             const value = parseOptionalNumber(elements.maxPrice.value);
-            return value !== null && value !== DEFAULT_MAX_PRICE;
+            return value !== null && value !== maxPriceDefault();
         },
     },
     { control: elements.maxMileage, isActive: () => parseOptionalNumber(elements.maxMileage.value) !== null },
@@ -82,7 +82,7 @@ const activeControlSpecs = [
     { control: elements.seller, isActive: () => elements.seller.value !== "All" },
     { control: elements.body, isActive: () => elements.body.value !== "All" },
     { control: elements.risk, isActive: () => elements.risk.value !== "All" },
-    { control: elements.riskStatus, isActive: () => elements.riskStatus.value !== "known" },
+    { control: elements.riskStatus, isActive: () => elements.riskStatus.value !== "All" },
     { control: elements.serviceDue, isActive: () => elements.serviceDue.value !== "All" },
     { control: elements.serviceCost, isActive: () => elements.serviceCost.value !== "All" },
     { control: elements.priceBucket, isActive: () => elements.priceBucket.value !== "All" },
@@ -405,7 +405,8 @@ function renderSummary() {
     document.title = PAGE_TITLE;
 }
 function maxPriceDefault() {
-    return appData?.meta?.maxPrice ?? DEFAULT_MAX_PRICE;
+    const value = appData?.meta?.maxPrice;
+    return typeof value === "number" && Number.isFinite(value) ? value : DEFAULT_MAX_PRICE;
 }
 function setFilters(values) {
     if (values.brand !== undefined) {
@@ -503,7 +504,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "All",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -539,7 +540,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "All",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -575,7 +576,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "All",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -611,7 +612,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "Avoid",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -647,7 +648,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "All",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -683,7 +684,7 @@ function renderShortcuts() {
                 seller: "All",
                 body: "All",
                 risk: "All",
-                riskStatus: "known",
+                riskStatus: "All",
                 serviceDue: "All",
                 serviceCost: "All",
                 priceBucket: "All",
@@ -935,14 +936,14 @@ function bindInventoryControls() {
         elements.region.value = "All";
         elements.distance.value = "All";
         elements.search.value = "";
-        elements.maxPrice.value = String(DEFAULT_MAX_PRICE);
+        elements.maxPrice.value = Number.isFinite(maxPriceDefault()) ? String(maxPriceDefault()) : "";
         elements.maxMileage.value = "";
         elements.fuel.value = "All";
         elements.gearbox.value = "All";
         elements.seller.value = "All";
         elements.body.value = "All";
         elements.risk.value = "All";
-        elements.riskStatus.value = "known";
+        elements.riskStatus.value = "All";
         elements.serviceDue.value = "All";
         elements.serviceCost.value = "All";
         elements.priceBucket.value = "All";
@@ -993,7 +994,7 @@ async function init() {
             populateSelect(elements.seller, appData.lookups?.sellers ?? appData.filters.sellers);
             populateSelect(elements.body, appData.lookups?.bodies ?? appData.filters.bodies);
             populateSelect(elements.risk, appData.lookups?.risks ?? appData.filters.risks.filter((risk) => risk !== "Unrated"));
-            populateSelect(elements.riskStatus, ["known", "unknown"], "known");
+            populateSelect(elements.riskStatus, ["known", "unknown"], "All");
             populateSelect(elements.serviceDue, appData.lookups?.serviceDueLevels ?? []);
             populateSelect(elements.serviceCost, appData.lookups?.serviceCostBuckets ?? []);
             populateSelect(elements.priceBucket, appData.lookups?.priceBuckets ?? []);
