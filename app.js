@@ -2,6 +2,7 @@ import { compareItems, dedupeSortValues, matchesSearch, parseBrandModel, parseOp
 const DATA_URL = "data.json";
 const DEFAULT_MAX_PRICE = 50000;
 const pageMode = "inventory";
+const PAGE_TITLE = "Bilar";
 let appData = null;
 let inventoryControlsBound = false;
 let inventoryView = "list";
@@ -16,17 +17,6 @@ function must(id) {
     return element;
 }
 const elements = {
-    heading: must("page-heading"),
-    intro: must("page-intro"),
-    serviceDisclaimer: must("service-disclaimer"),
-    bottomLineHeading: must("bottom-line-heading"),
-    bottomLineText: must("bottom-line-text"),
-    summaryCards: must("summary-cards"),
-    modelSpotCheck: must("model-spot-check"),
-    topModels: must("top-models"),
-    topLocations: must("top-locations"),
-    decisionRules: must("decision-rules"),
-    filterIntro: must("inventory-filter-intro"),
     shortcutRoot: must("shortcut-root"),
     viewCards: must("view-cards"),
     viewList: must("view-list"),
@@ -47,9 +37,30 @@ const elements = {
     sort3: must("sort-3"),
     reset: must("reset-filters"),
     resultsSummary: must("results-summary"),
-    filterState: must("filter-state"),
     inventoryBody: must("inventory-body"),
 };
+const activeControlSpecs = [
+    { control: elements.brand, isActive: () => elements.brand.value !== "All" },
+    { control: elements.model, isActive: () => elements.model.value !== "All" },
+    { control: elements.location, isActive: () => elements.location.value !== "All" },
+    { control: elements.search, isActive: () => elements.search.value.trim() !== "" },
+    {
+        control: elements.maxPrice,
+        isActive: () => {
+            const value = parseOptionalNumber(elements.maxPrice.value);
+            return value !== null && value !== DEFAULT_MAX_PRICE;
+        },
+    },
+    { control: elements.maxMileage, isActive: () => parseOptionalNumber(elements.maxMileage.value) !== null },
+    { control: elements.fuel, isActive: () => elements.fuel.value !== "All" },
+    { control: elements.seller, isActive: () => elements.seller.value !== "All" },
+    { control: elements.body, isActive: () => elements.body.value !== "All" },
+    { control: elements.risk, isActive: () => elements.risk.value !== "All" },
+    { control: elements.unrated, isActive: () => elements.unrated.value === "include" },
+    { control: elements.sort1, isActive: () => elements.sort1.value !== "none" },
+    { control: elements.sort2, isActive: () => elements.sort2.value !== "none" },
+    { control: elements.sort3, isActive: () => elements.sort3.value !== "none" },
+];
 function escapeHtml(value) {
     return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -128,27 +139,8 @@ function updateModelOptions(selectedBrand, selectedModel = "All") {
     const modelOptions = selectedBrand === "All" ? allModelOptions : modelOptionsByBrand.get(selectedBrand) ?? [];
     populateSelect(elements.model, modelOptions, selectedModel, true);
 }
-function renderSummary(data) {
-    const copy = data.copy;
-    const inventoryPage = pageMode === "inventory";
-    document.title = inventoryPage ? copy.inventoryTitle : copy.shortlistTitle;
-    elements.heading.textContent = inventoryPage ? copy.inventoryTitle : copy.shortlistTitle;
-    elements.intro.innerHTML = inventoryPage ? copy.inventoryIntroHtml : copy.shortlistIntroHtml;
-    elements.serviceDisclaimer.textContent = copy.serviceDisclaimer;
-    elements.bottomLineHeading.textContent = inventoryPage ? copy.inventoryBottomLineHeading : copy.shortlistBottomLineHeading;
-    elements.bottomLineText.innerHTML = inventoryPage ? copy.inventoryBottomLineHtml : copy.shortlistBottomLineHtml;
-    elements.summaryCards.innerHTML = (inventoryPage ? data.summary.inventoryCards : data.summary.shortlistCards)
-        .map((card) => `<div class="summary-card"><strong>${escapeHtml(card.value)}</strong>${escapeHtml(card.label)}</div>`)
-        .join("");
-    elements.modelSpotCheck.innerHTML = data.summary.modelSpotCheck
-        .map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`)
-        .join("");
-    elements.topModels.innerHTML = data.summary.topModels.map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`).join("");
-    elements.topLocations.innerHTML = data.summary.topLocations
-        .map((item) => `<li>${escapeHtml(item.name)}: ${escapeHtml(item.count)}</li>`)
-        .join("");
-    elements.decisionRules.innerHTML = data.summary.rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("");
-    elements.filterIntro.textContent = copy.inventoryFilterIntro;
+function renderSummary() {
+    document.title = PAGE_TITLE;
 }
 function setFilters(values) {
     if (values.brand !== undefined) {
@@ -333,35 +325,13 @@ function renderShortcuts() {
 function getSortValues() {
     return dedupeSortValues([elements.sort1.value, elements.sort2.value, elements.sort3.value]);
 }
-function describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage) {
-    const parts = [];
-    if (elements.brand.value !== "All")
-        parts.push(`märke: ${elements.brand.value}`);
-    if (elements.model.value !== "All")
-        parts.push(`modell: ${elements.model.value}`);
-    if (elements.location.value !== "All")
-        parts.push(`ort: ${elements.location.value}`);
-    if (tokenGroups.length)
-        parts.push(`sök: ${elements.search.value.trim()}`);
-    if (maxPrice !== null && maxPrice !== DEFAULT_MAX_PRICE)
-        parts.push(`maxpris: ${Math.round(maxPrice)}`);
-    if (maxMileage !== null)
-        parts.push(`max mil: ${Math.round(maxMileage)}`);
-    if (elements.fuel.value !== "All")
-        parts.push(`drivmedel: ${elements.fuel.value}`);
-    if (elements.seller.value !== "All")
-        parts.push(`säljare: ${elements.seller.value}`);
-    if (elements.body.value !== "All")
-        parts.push(`kaross: ${elements.body.value}`);
-    if (elements.risk.value !== "All")
-        parts.push(`risk: ${riskLabel(elements.risk.value)}`);
-    if (elements.unrated.value === "include")
-        parts.push("visar ej bedömda");
-    if (sortValues.length) {
-        const sortText = sortValues.map((value) => sortLabelByValue[value] ?? value).join(" > ");
-        parts.push(`sortering: ${sortText}`);
+function updateActiveFilterHighlights() {
+    for (const spec of activeControlSpecs) {
+        const wrapper = spec.control.parentElement;
+        if (!wrapper)
+            continue;
+        wrapper.classList.toggle("is-active", spec.isActive());
     }
-    return parts.length ? `Aktivt: ${parts.join(" • ")}` : "Aktivt: standard";
 }
 function renderInventoryRows(rows) {
     if (inventoryView === "cards") {
@@ -460,7 +430,7 @@ function renderInventory() {
         .sort((a, b) => compareItems(a, b, sortValues));
     renderInventoryRows(filtered);
     elements.resultsSummary.textContent = `Visar ${filtered.length} av ${visibleInventory.length} bilar`;
-    elements.filterState.textContent = describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage);
+    updateActiveFilterHighlights();
     elements.viewCards.classList.toggle("active", inventoryView === "cards");
     elements.viewList.classList.toggle("active", inventoryView === "list");
 }
@@ -527,7 +497,7 @@ async function loadData() {
 async function init() {
     try {
         appData = await loadData();
-        renderSummary(appData);
+        renderSummary();
         renderShortcuts();
         if (pageMode === "inventory") {
             const { brandOptions, locationOptions } = buildStructuredFilterCatalog();

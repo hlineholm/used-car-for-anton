@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bilkoll</title>
+  <title>Bilar</title>
   <link rel="icon" href="data:,">
   <style>
     :root {
@@ -15,6 +15,7 @@
       --header: #f6f8fa;
       --panel: #f6f8fa;
       --link: #0969da;
+      --active-bg: rgba(9, 105, 218, 0.08);
       --lower: #1a7f37;
       --medium: #9a6700;
       --higher: #bf8700;
@@ -30,6 +31,7 @@
         --header: #161b22;
         --panel: #161b22;
         --link: #58a6ff;
+        --active-bg: rgba(88, 166, 255, 0.16);
         --lower: #3fb950;
         --medium: #d29922;
         --higher: #e3b341;
@@ -64,34 +66,21 @@
       border-radius: 14px;
       background: var(--panel);
     }
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 16px;
-    }
-    .summary-card {
-      padding: 14px 16px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--bg);
-    }
-    .summary-card strong {
-      display: block;
-      font-size: 1.4rem;
-      margin-bottom: 4px;
-    }
-    .two-col {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      margin-top: 16px;
-    }
     .filters {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       margin-top: 16px;
+    }
+    .filters > div {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 6px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .filters > div.is-active {
+      border-color: var(--link);
+      background: var(--active-bg);
     }
     label {
       display: block;
@@ -226,35 +215,7 @@
     .car-note {
       margin: 0;
     }
-    .mini-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
-    .mini-card .meta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
     @media (min-width: 1400px) {
-      .summary-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-      .two-col {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
       .car-grid {
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
       }
@@ -337,49 +298,11 @@
     .page-shortlist .inventory-only {
       display: none;
     }
-    #full-inventory {
-      order: 1;
-    }
-    #overview-panel {
-      order: 2;
-    }
   </style>
 </head>
 <body class="page-inventory">
   <main>
-    <h1 id="page-heading">Laddar...</h1>
-    <p class="muted" id="page-intro"></p>
-    <p class="muted" id="service-disclaimer"></p>
-
-    <section class="panel" id="overview-panel">
-      <h2 id="bottom-line-heading"></h2>
-      <p id="bottom-line-text"></p>
-      <div class="summary-grid" id="summary-cards"></div>
-      <div class="two-col inventory-only">
-        <div>
-          <h3>Modeller</h3>
-          <ul class="compact" id="model-spot-check"></ul>
-        </div>
-        <div>
-          <h3>Vanligast</h3>
-          <ul class="compact" id="top-models"></ul>
-        </div>
-      </div>
-      <div class="two-col inventory-only">
-        <div>
-          <h3>Områden</h3>
-          <ul class="compact" id="top-locations"></ul>
-        </div>
-        <div>
-          <h3>Regler</h3>
-          <ul class="compact" id="decision-rules"></ul>
-        </div>
-      </div>
-    </section>
-
     <section class="panel inventory-only" id="full-inventory">
-      <h2>Alla bilar</h2>
-      <p class="muted" id="inventory-filter-intro"></p>
       <div class="inventory-toolbar">
         <section class="tool-card">
           <h3>Snabbval</h3>
@@ -460,7 +383,6 @@
           </button>
         </div>
         <span class="muted" id="results-summary"></span>
-        <span class="muted" id="filter-state"></span>
       </div>
       <div class="car-grid" id="inventory-body"></div>
     </section>
