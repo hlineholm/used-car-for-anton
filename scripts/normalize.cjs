@@ -348,6 +348,69 @@ function bucket(value, buckets) {
   return buckets[buckets.length - 1].label;
 }
 
+function formatBucketNumber(value) {
+  if (!Number.isFinite(value)) return "Okänt";
+  const rounded = Math.round(value);
+  return rounded.toLocaleString("sv-SE");
+}
+
+function buildEqualBuckets(maxValue, labels, minimumStep = 1) {
+  const safeMax = Math.max(Number.isFinite(maxValue) ? maxValue : 0, minimumStep * labels.length);
+  const step = Math.max(Math.ceil(safeMax / labels.length), minimumStep);
+  return labels.map((label, index) => ({
+    max: index === labels.length - 1 ? Number.POSITIVE_INFINITY : step * (index + 1),
+    label: typeof label === "function" ? label(step, index, safeMax) : label,
+  }));
+}
+
+function buildPriceBuckets(maxPrice) {
+  const step = Math.max(Math.ceil(Math.max(maxPrice, 1) / 4 / 1000) * 1000, 1000);
+  const breaks = [step, step * 2, step * 3];
+  return [
+    { max: breaks[0], label: `<=${formatBucketNumber(breaks[0])}` },
+    { max: breaks[1], label: `${formatBucketNumber(breaks[0] + 1)}-${formatBucketNumber(breaks[1])}` },
+    { max: breaks[2], label: `${formatBucketNumber(breaks[1] + 1)}-${formatBucketNumber(breaks[2])}` },
+    { max: Number.POSITIVE_INFINITY, label: `>${formatBucketNumber(breaks[2])}` },
+  ];
+}
+
+function buildMileageBuckets(maxMileage) {
+  const step = Math.max(Math.ceil(Math.max(maxMileage, 1) / 4 / 1000) * 1000, 1000);
+  const breaks = [step, step * 2, step * 3];
+  return [
+    { max: breaks[0], label: `<=${formatBucketNumber(breaks[0])}` },
+    { max: breaks[1], label: `${formatBucketNumber(breaks[0] + 1)}-${formatBucketNumber(breaks[1])}` },
+    { max: breaks[2], label: `${formatBucketNumber(breaks[1] + 1)}-${formatBucketNumber(breaks[2])}` },
+    { max: Number.POSITIVE_INFINITY, label: `>${formatBucketNumber(breaks[2])}` },
+  ];
+}
+
+function buildAgeBuckets(maxAge) {
+  const step = Math.max(Math.ceil(Math.max(maxAge, 1) / 4), 1);
+  const breaks = [step, step * 2, step * 3];
+  return [
+    { max: breaks[0], label: `<=${breaks[0]} år` },
+    { max: breaks[1], label: `${breaks[0] + 1}-${breaks[1]} år` },
+    { max: breaks[2], label: `${breaks[1] + 1}-${breaks[2]} år` },
+    { max: Number.POSITIVE_INFINITY, label: `>${breaks[2]} år` },
+  ];
+}
+
+function buildPricePerMilBuckets(maxPricePerMil) {
+  const step = Math.max(Math.ceil(Math.max(maxPricePerMil, 1) / 4), 1);
+  const breaks = [step, step * 2, step * 3];
+  return [
+    { max: breaks[0], label: `<=${formatBucketNumber(breaks[0])} kr/mil` },
+    { max: breaks[1], label: `${formatBucketNumber(breaks[0] + 1)}-${formatBucketNumber(breaks[1])} kr/mil` },
+    { max: breaks[2], label: `${formatBucketNumber(breaks[1] + 1)}-${formatBucketNumber(breaks[2])} kr/mil` },
+    { max: Number.POSITIVE_INFINITY, label: `>${formatBucketNumber(breaks[2])} kr/mil` },
+  ];
+}
+
+function bucketOptionsToLabels(options) {
+  return options.map((option) => option.label);
+}
+
 function formatInteger(value, suffix = "") {
   if (value == null) return "Okänt";
   return `${value.toLocaleString("sv-SE")}${suffix}`;
@@ -808,11 +871,15 @@ const sellers = sortStrings(processed.map((item) => item.canonical.sellerType));
 const bodies = sortStrings(processed.map((item) => item.canonical.bodyType));
 const risks = ["Lower", "Medium", "Higher", "Avoid"];
 const distanceBuckets = ["0-25 km", "25-50 km", "50-100 km", "100-200 km", "200+ km"];
-const priceBuckets = ["<=50k", "50-100k", "100-200k", ">200k", "Okänt"];
-const mileageBuckets = ["<=10k", "10-20k", "20-40k", ">40k", "Okänt"];
-const ageBuckets = ["<=5 år", "5-10 år", "10-20 år", ">20 år", "Okänt"];
+const maxPrice = Math.max(...processed.map((item) => item.canonical.priceNum ?? 0), 0);
+const maxMileage = Math.max(...processed.map((item) => item.canonical.mileageMil ?? 0), 0);
+const maxAge = Math.max(...processed.map((item) => item.derived.age ?? 0), 0);
+const maxPricePerMil = Math.max(...processed.map((item) => item.derived.pricePerMil ?? 0), 0);
+const priceBuckets = bucketOptionsToLabels(buildPriceBuckets(maxPrice));
+const mileageBuckets = bucketOptionsToLabels(buildMileageBuckets(maxMileage));
+const ageBuckets = bucketOptionsToLabels(buildAgeBuckets(maxAge));
 const ownersBuckets = ["1", "2", "3", "4", "5", "6-7", "8-10", "11+", "Okänt"];
-const pricePerMilBuckets = ["<=1,5 kr/mil", "1,5-2,5 kr/mil", "2,5-5 kr/mil", ">5 kr/mil", "Okänt"];
+const pricePerMilBuckets = bucketOptionsToLabels(buildPricePerMilBuckets(maxPricePerMil));
 const serviceDueLevels = ["Now", "Soon", "Later", "Unknown"];
 const serviceCostBuckets = ["0-5k", "5-10k", "10-20k", "20k+", "Okänt"];
 const debtStatuses = ["No", "Yes", "Unknown"];
