@@ -3366,6 +3366,7 @@ function renderShortcuts(store, maxPriceValue) {
     const shortcut = shortcuts.find((item) => item.id === button.dataset.shortcut);
     if (!shortcut) return;
     button.addEventListener("click", () => {
+      store.dispatch(resetUiState(createUiDefaults(selectMaxPriceDefault(store.getState()))));
       store.dispatch(applyPreset(shortcut.values));
     });
   });

@@ -217,10 +217,31 @@ test("resetUiState and dataFailed update the store slices", () => {
 test("applyPreset updates filters and sorts together", () => {
   const store = createAppStore();
   store.dispatch(resetUiState(createUiDefaults(50000)));
+  store.dispatch(setFilterValue({ key: "fuel", value: "Diesel" }));
+  store.dispatch(setFilterValue({ key: "body", value: "SUV" }));
   store.dispatch(applyPreset({ brand: "Toyota", model: "Prius", sort1: "price-asc", sort2: "mileage-asc" }));
 
   assert.equal(store.getState().ui.filters.brand, "Toyota");
   assert.equal(store.getState().ui.filters.model, "Prius");
+  assert.equal(store.getState().ui.filters.fuel, "Diesel");
+  assert.equal(store.getState().ui.filters.body, "SUV");
   assert.equal(store.getState().ui.sort.sort1, "price-asc");
   assert.equal(store.getState().ui.sort.sort2, "mileage-asc");
+});
+
+test("shortcut-style reset then preset replaces prior filter state", () => {
+  const store = createAppStore();
+  store.dispatch(resetUiState(createUiDefaults(50000)));
+  store.dispatch(setFilterValue({ key: "fuel", value: "Diesel" }));
+  store.dispatch(setFilterValue({ key: "body", value: "SUV" }));
+  store.dispatch(setSortValue({ key: "sort1", value: "mileage-asc" }));
+
+  store.dispatch(resetUiState(createUiDefaults(50000)));
+  store.dispatch(applyPreset({ brand: "Toyota", model: "Prius", sort1: "price-asc" }));
+
+  assert.equal(store.getState().ui.filters.fuel, "All");
+  assert.equal(store.getState().ui.filters.body, "All");
+  assert.equal(store.getState().ui.sort.sort1, "price-asc");
+  assert.equal(store.getState().ui.sort.sort2, "none");
+  assert.equal(store.getState().ui.sort.sort3, "none");
 });
