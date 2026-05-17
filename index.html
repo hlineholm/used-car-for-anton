@@ -477,6 +477,41 @@
       return `badge badge-${String(risk || "unrated").toLowerCase()}`;
     }
 
+    function compareText(a, b, key, descending = false) {
+      return descending
+        ? String(b[key] ?? "").localeCompare(String(a[key] ?? ""))
+        : String(a[key] ?? "").localeCompare(String(b[key] ?? ""));
+    }
+
+    function compareNumber(a, b, key, descending = false) {
+      const aValue = Number(a[key] ?? 0);
+      const bValue = Number(b[key] ?? 0);
+      return descending ? bValue - aValue : aValue - bValue;
+    }
+
+    function riskRank(risk) {
+      switch (String(risk || "").toLowerCase()) {
+        case "lower":
+          return 0;
+        case "medium":
+          return 1;
+        case "higher":
+          return 2;
+        case "avoid":
+          return 3;
+        default:
+          return 4;
+      }
+    }
+
+    function serviceCostRank(value) {
+      const match = String(value || "").match(/\d+(?:[.,]\d+)?\s*k?/i);
+      if (!match) return Number.POSITIVE_INFINITY;
+      const raw = match[0].toLowerCase().replace(",", ".");
+      const numeric = parseFloat(raw);
+      return Number.isNaN(numeric) ? Number.POSITIVE_INFINITY : numeric * (raw.includes("k") ? 1000 : 1);
+    }
+
     function populateSelect(select, values, selectedValue = "All", includeAll = true) {
       const options = [];
       if (includeAll) {
@@ -576,23 +611,61 @@
     function compareField(a, b, sortValue) {
       switch (sortValue) {
         case "price-desc":
-          return b.priceNum - a.priceNum;
+          return compareNumber(a, b, "priceNum", true);
         case "mileage-asc":
-          return a.mileageMil - b.mileageMil;
+          return compareNumber(a, b, "mileageMil");
         case "mileage-desc":
-          return b.mileageMil - a.mileageMil;
+          return compareNumber(a, b, "mileageMil", true);
         case "year-desc":
-          return b.yearNum - a.yearNum;
+          return compareNumber(a, b, "yearNum", true);
         case "year-asc":
-          return a.yearNum - b.yearNum;
-        case "model-asc":
-          return a.model.localeCompare(b.model);
-        case "location-asc":
-          return a.location.localeCompare(b.location);
+          return compareNumber(a, b, "yearNum");
         case "owners-asc":
-          return (a.ownersNum ?? 999) - (b.ownersNum ?? 999);
+          return compareNumber(a, b, "ownersNum");
+        case "owners-desc":
+          return compareNumber(a, b, "ownersNum", true);
+        case "model-asc":
+          return compareText(a, b, "model");
+        case "model-desc":
+          return compareText(a, b, "model", true);
+        case "trim-asc":
+          return compareText(a, b, "trim");
+        case "trim-desc":
+          return compareText(a, b, "trim", true);
+        case "location-asc":
+          return compareText(a, b, "location");
+        case "location-desc":
+          return compareText(a, b, "location", true);
+        case "fuel-asc":
+          return compareText(a, b, "fuel");
+        case "fuel-desc":
+          return compareText(a, b, "fuel", true);
+        case "seller-asc":
+          return compareText(a, b, "seller");
+        case "seller-desc":
+          return compareText(a, b, "seller", true);
+        case "body-asc":
+          return compareText(a, b, "body");
+        case "body-desc":
+          return compareText(a, b, "body", true);
+        case "risk-best":
+          return riskRank(a.risk) - riskRank(b.risk) || compareText(a, b, "model");
+        case "risk-worst":
+          return riskRank(b.risk) - riskRank(a.risk) || compareText(a, b, "model");
+        case "service-due-asc":
+          return compareText(a, b, "serviceDue");
+        case "service-due-desc":
+          return compareText(a, b, "serviceDue", true);
+        case "service-cost-asc":
+          return serviceCostRank(a.serviceCost) - serviceCostRank(b.serviceCost) || compareText(a, b, "model");
+        case "service-cost-desc":
+          return serviceCostRank(b.serviceCost) - serviceCostRank(a.serviceCost) || compareText(a, b, "model");
+        case "reg-asc":
+          return compareText(a, b, "reg");
+        case "reg-desc":
+          return compareText(a, b, "reg", true);
         case "price-asc":
-          return a.priceNum - b.priceNum;
+          return compareNumber(a, b, "priceNum");
         case "none":
         default:
           return 0;

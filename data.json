@@ -285,16 +285,92 @@
         "label": "Year oldest first"
       },
       {
+        "value": "owners-asc",
+        "label": "Owners low to high"
+      },
+      {
+        "value": "owners-desc",
+        "label": "Owners high to low"
+      },
+      {
         "value": "model-asc",
         "label": "Model A to Z"
+      },
+      {
+        "value": "model-desc",
+        "label": "Model Z to A"
+      },
+      {
+        "value": "trim-asc",
+        "label": "Trim A to Z"
+      },
+      {
+        "value": "trim-desc",
+        "label": "Trim Z to A"
       },
       {
         "value": "location-asc",
         "label": "Location A to Z"
       },
       {
-        "value": "owners-asc",
-        "label": "Owners low to high"
+        "value": "location-desc",
+        "label": "Location Z to A"
+      },
+      {
+        "value": "fuel-asc",
+        "label": "Fuel A to Z"
+      },
+      {
+        "value": "fuel-desc",
+        "label": "Fuel Z to A"
+      },
+      {
+        "value": "seller-asc",
+        "label": "Seller A to Z"
+      },
+      {
+        "value": "seller-desc",
+        "label": "Seller Z to A"
+      },
+      {
+        "value": "body-asc",
+        "label": "Body A to Z"
+      },
+      {
+        "value": "body-desc",
+        "label": "Body Z to A"
+      },
+      {
+        "value": "risk-best",
+        "label": "Risk best to worst"
+      },
+      {
+        "value": "risk-worst",
+        "label": "Risk worst to best"
+      },
+      {
+        "value": "service-due-asc",
+        "label": "Service due A to Z"
+      },
+      {
+        "value": "service-due-desc",
+        "label": "Service due Z to A"
+      },
+      {
+        "value": "service-cost-asc",
+        "label": "Service cost low to high"
+      },
+      {
+        "value": "service-cost-desc",
+        "label": "Service cost high to low"
+      },
+      {
+        "value": "reg-asc",
+        "label": "Registration A to Z"
+      },
+      {
+        "value": "reg-desc",
+        "label": "Registration Z to A"
       },
       {
         "value": "none",
