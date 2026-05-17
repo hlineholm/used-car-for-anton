@@ -1,0 +1,53 @@
+name: Toggle GitHub Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: "GitHub Pages state"
+        required: true
+        type: choice
+        options:
+          - disable
+          - enable
+
+permissions:
+  contents: read
+  pages: write
+
+jobs:
+  toggle-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disable GitHub Pages
+        if: inputs.state == 'disable'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GH_REPO}/pages" >/dev/null 2>&1; then
+            gh api -X DELETE "repos/${GH_REPO}/pages"
+            echo "GitHub Pages disabled."
+          else
+            echo "GitHub Pages is already disabled."
+          fi
+
+      - name: Enable GitHub Pages
+        if: inputs.state == 'enable'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GH_REPO}/pages" >/dev/null 2>&1; then
+            gh api -X PUT "repos/${GH_REPO}/pages" \
+              -f "source[branch]=master" \
+              -f "source[path]=/"
+            echo "GitHub Pages updated to publish from master:/."
+          else
+            gh api -X POST "repos/${GH_REPO}/pages" \
+              -f "source[branch]=master" \
+              -f "source[path]=/"
+            echo "GitHub Pages enabled from master:/."
+          fi
