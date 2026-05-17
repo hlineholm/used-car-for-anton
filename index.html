@@ -544,8 +544,17 @@
         case "avoid":
           return 3;
         default:
-          return 4;
+          return null;
       }
+    }
+
+    function compareRisk(a, b, descending = false) {
+      const aRank = riskRank(a.risk);
+      const bRank = riskRank(b.risk);
+      if (aRank === null && bRank === null) return 0;
+      if (aRank === null) return 1;
+      if (bRank === null) return -1;
+      return descending ? bRank - aRank : aRank - bRank;
     }
 
     function serviceCostRank(value) {
@@ -799,10 +808,12 @@
           return compareText(a, b, "body");
         case "body-desc":
           return compareText(a, b, "body", true);
+        case "risk-asc":
         case "risk-best":
-          return riskRank(a.risk) - riskRank(b.risk);
+          return compareRisk(a, b, false);
+        case "risk-desc":
         case "risk-worst":
-          return riskRank(b.risk) - riskRank(a.risk);
+          return compareRisk(a, b, true);
         case "service-due-asc":
           return compareText(a, b, "serviceDue");
         case "service-due-desc":

@@ -341,12 +341,12 @@
         "label": "Body Z to A"
       },
       {
-        "value": "risk-best",
-        "label": "Risk best to worst"
+        "value": "risk-asc",
+        "label": "Risk low to high"
       },
       {
-        "value": "risk-worst",
-        "label": "Risk worst to best"
+        "value": "risk-desc",
+        "label": "Risk high to low"
       },
       {
         "value": "service-due-asc",
