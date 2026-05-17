@@ -691,34 +691,85 @@
     }
 
     function renderInventoryRows(rows) {
-      elements.inventoryBody.className = inventoryView === "cards" ? "car-grid" : "car-list";
-      elements.inventoryBody.innerHTML = rows.map((item) => `
-        <article class="car-card">
-          <div class="car-card-header">
-            <div>
-              <h3>${escapeHtml(item.model)}</h3>
-              <div class="muted">${escapeHtml(item.trim)}</div>
+      if (inventoryView === "cards") {
+        elements.inventoryBody.className = "car-grid";
+        elements.inventoryBody.innerHTML = rows.map((item) => `
+          <article class="car-card">
+            <div class="car-card-header">
+              <div>
+                <h3>${escapeHtml(item.model)}</h3>
+                <div class="muted">${escapeHtml(item.trim)}</div>
+              </div>
+              <span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span>
             </div>
-            <span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span>
-          </div>
-          <div class="car-meta">
-            <div><span class="label">Year</span>${escapeHtml(item.year)}</div>
-            <div><span class="label">Mileage</span>${escapeHtml(item.mileage)}</div>
-            <div><span class="label">Price</span>${escapeHtml(item.price)}</div>
-            <div><span class="label">Fuel</span>${escapeHtml(item.fuel)}</div>
-            <div><span class="label">Location</span>${escapeHtml(item.location)}</div>
-            <div><span class="label">Seller</span>${escapeHtml(item.seller)}</div>
-            <div><span class="label">Body</span>${escapeHtml(item.body)}</div>
-            <div><span class="label">Owners</span>${escapeHtml(item.owners)}</div>
-            <div><span class="label">Reg</span>${escapeHtml(item.reg)}</div>
-            <div><span class="label">Link</span><a href="${escapeHtml(item.href)}">Blocket</a></div>
-          </div>
-          <div><span class="label">Service due soon</span>${escapeHtml(item.serviceDue)}</div>
-          <div><span class="label">Likely cost</span>${escapeHtml(item.serviceCost)}</div>
-          <div><span class="label">Forum watchouts</span><p class="car-note">${escapeHtml(item.forumWatchouts)}</p></div>
-          <div><span class="label">Why flagged this way</span><p class="car-note">${escapeHtml(item.riskNote)}</p></div>
-        </article>
-      `).join("");
+            <div class="car-meta">
+              <div><span class="label">Year</span>${escapeHtml(item.year)}</div>
+              <div><span class="label">Mileage</span>${escapeHtml(item.mileage)}</div>
+              <div><span class="label">Price</span>${escapeHtml(item.price)}</div>
+              <div><span class="label">Fuel</span>${escapeHtml(item.fuel)}</div>
+              <div><span class="label">Location</span>${escapeHtml(item.location)}</div>
+              <div><span class="label">Seller</span>${escapeHtml(item.seller)}</div>
+              <div><span class="label">Body</span>${escapeHtml(item.body)}</div>
+              <div><span class="label">Owners</span>${escapeHtml(item.owners)}</div>
+              <div><span class="label">Reg</span>${escapeHtml(item.reg)}</div>
+              <div><span class="label">Link</span><a href="${escapeHtml(item.href)}">Blocket</a></div>
+            </div>
+            <div><span class="label">Service due soon</span>${escapeHtml(item.serviceDue)}</div>
+            <div><span class="label">Likely cost</span>${escapeHtml(item.serviceCost)}</div>
+            <div><span class="label">Forum watchouts</span><p class="car-note">${escapeHtml(item.forumWatchouts)}</p></div>
+            <div><span class="label">Why flagged this way</span><p class="car-note">${escapeHtml(item.riskNote)}</p></div>
+          </article>
+        `).join("");
+        return;
+      }
+
+      elements.inventoryBody.className = "table-wrap";
+      elements.inventoryBody.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Trim</th>
+              <th>Risk</th>
+              <th>Year</th>
+              <th>Mileage</th>
+              <th>Price</th>
+              <th>Fuel</th>
+              <th>Location</th>
+              <th>Seller</th>
+              <th>Body</th>
+              <th>Owners</th>
+              <th>Reg</th>
+              <th>Service due soon</th>
+              <th>Likely cost</th>
+              <th>Forum watchouts</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((item) => `
+              <tr>
+                <td>${escapeHtml(item.model)}</td>
+                <td>${escapeHtml(item.trim)}</td>
+                <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
+                <td>${escapeHtml(item.year)}</td>
+                <td>${escapeHtml(item.mileage)}</td>
+                <td>${escapeHtml(item.price)}</td>
+                <td>${escapeHtml(item.fuel)}</td>
+                <td>${escapeHtml(item.location)}</td>
+                <td>${escapeHtml(item.seller)}</td>
+                <td>${escapeHtml(item.body)}</td>
+                <td>${escapeHtml(item.owners)}</td>
+                <td>${escapeHtml(item.reg)}</td>
+                <td>${escapeHtml(item.serviceDue)}</td>
+                <td>${escapeHtml(item.serviceCost)}</td>
+                <td>${escapeHtml(item.forumWatchouts)}</td>
+                <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
     }
 
     function renderInventory() {
