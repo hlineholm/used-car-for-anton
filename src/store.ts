@@ -36,6 +36,8 @@ export interface AppData {
     bodies?: string[];
     gearboxes?: string[];
     risks?: string[];
+    primaryProfiles?: string[];
+    profileTags?: string[];
     regions?: string[];
     distanceBuckets?: string[];
     serviceDueLevels?: string[];
@@ -72,6 +74,8 @@ export interface InventoryUiFilters {
   seller: string;
   body: string;
   risk: string;
+  primaryProfile: string;
+  profileTag: string;
   riskStatus: string;
   serviceDue: string;
   serviceCost: string;
@@ -127,6 +131,8 @@ export function createFilterDefaults(maxPrice?: number): InventoryUiFilters {
     seller: "All",
     body: "All",
     risk: "All",
+    primaryProfile: "All",
+    profileTag: "All",
     riskStatus: "All",
     serviceDue: "All",
     serviceCost: "All",
@@ -256,6 +262,8 @@ function toInventoryFilters(filters: InventoryUiFilters): InventoryFilters {
     seller: filters.seller,
     body: filters.body,
     risk: filters.risk,
+    primaryProfile: filters.primaryProfile,
+    profileTag: filters.profileTag,
     riskStatus: filters.riskStatus,
     serviceDue: filters.serviceDue,
     serviceCost: filters.serviceCost,

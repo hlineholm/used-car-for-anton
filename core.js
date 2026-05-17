@@ -64,6 +64,8 @@ const INVENTORY_SELECT_FILTER_KEYS = [
     "seller",
     "body",
     "risk",
+    "primaryProfile",
+    "profileTag",
     "riskStatus",
     "serviceDue",
     "serviceCost",
@@ -157,6 +159,10 @@ function getInventoryFilterValue(projected, key) {
             return projected.bodyType;
         case "risk":
             return projected.risk ?? "Unknown";
+        case "primaryProfile":
+            return projected.primaryProfile;
+        case "profileTag":
+            return projected.profileTags[0] ?? "Okänd";
         case "riskStatus":
             return projected.riskKnown ? "known" : "unknown";
         case "serviceDue":
@@ -178,6 +184,12 @@ function getInventoryFilterValue(projected, key) {
         case "registryVerified":
             return String(projected.registryVerified);
     }
+}
+function getInventoryFilterValues(projected, key) {
+    if (key === "profileTag") {
+        return projected.profileTags.length ? projected.profileTags : ["Okänd"];
+    }
+    return [getInventoryFilterValue(projected, key)];
 }
 function compareFilterOptionValues(key, aValue, bValue) {
     switch (key) {
@@ -240,6 +252,8 @@ export function projectInventoryItem(item) {
         ownersNum,
         risk,
         riskKnown: item.canonical?.riskKnown ?? (item.risk !== "Unrated" && item.risk !== "Unknown"),
+        primaryProfile: item.canonical?.primaryProfile ?? "Okänd profil",
+        profileTags: item.derived?.profileTags ?? [],
         serviceDueLevel: item.canonical?.serviceDueLevel ?? "Unknown",
         serviceCostMin: item.canonical?.serviceCostMin ?? null,
         serviceCostBucket: item.canonical?.serviceCostBucket ?? "Okänt",
@@ -312,6 +326,8 @@ export function matchesSearch(item, tokenGroups) {
         item.body,
         item.reg,
         item.risk,
+        item.canonical?.primaryProfile,
+        ...(item.derived?.profileTags ?? []),
         item.riskNote,
         item.serviceDue,
         item.serviceCost,
@@ -550,6 +566,11 @@ export function matchesInventoryFilters(item, filters, excludedKey) {
         (excludedKey === "seller" || matchesSelectFilter(filters.seller, projected.sellerType)) &&
         (excludedKey === "body" || matchesSelectFilter(filters.body, projected.bodyType)) &&
         (excludedKey === "risk" || matchesSelectFilter(filters.risk, projected.risk ?? "Unknown")) &&
+        (excludedKey === "primaryProfile" || matchesSelectFilter(filters.primaryProfile, projected.primaryProfile)) &&
+        (excludedKey === "profileTag" ||
+            !filters.profileTag ||
+            filters.profileTag === "All" ||
+            projected.profileTags.includes(filters.profileTag)) &&
         (excludedKey === "riskStatus" ||
             riskStatus === "All" ||
             (riskStatus === "known" && projected.riskKnown) ||
@@ -577,8 +598,9 @@ function buildInventoryFilterOptions(items, filters) {
         for (const item of items) {
             if (!matchesInventoryFilters(item, filters, key))
                 continue;
-            const value = getInventoryFilterValue(projectInventoryItem(item), key);
-            counts.set(value, (counts.get(value) ?? 0) + 1);
+            for (const value of getInventoryFilterValues(projectInventoryItem(item), key)) {
+                counts.set(value, (counts.get(value) ?? 0) + 1);
+            }
         }
         const selectedValue = filters[key];
         if (selectedValue && selectedValue !== "All" && !counts.has(selectedValue)) {

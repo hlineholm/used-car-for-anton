@@ -55,6 +55,8 @@ var INVENTORY_SELECT_FILTER_KEYS = [
   "seller",
   "body",
   "risk",
+  "primaryProfile",
+  "profileTag",
   "riskStatus",
   "serviceDue",
   "serviceCost",
@@ -138,6 +140,10 @@ function getInventoryFilterValue(projected, key) {
       return projected.bodyType;
     case "risk":
       return projected.risk ?? "Unknown";
+    case "primaryProfile":
+      return projected.primaryProfile;
+    case "profileTag":
+      return projected.profileTags[0] ?? "Ok\xE4nd";
     case "riskStatus":
       return projected.riskKnown ? "known" : "unknown";
     case "serviceDue":
@@ -159,6 +165,12 @@ function getInventoryFilterValue(projected, key) {
     case "registryVerified":
       return String(projected.registryVerified);
   }
+}
+function getInventoryFilterValues(projected, key) {
+  if (key === "profileTag") {
+    return projected.profileTags.length ? projected.profileTags : ["Ok\xE4nd"];
+  }
+  return [getInventoryFilterValue(projected, key)];
 }
 function compareFilterOptionValues(key, aValue, bValue) {
   switch (key) {
@@ -220,6 +232,8 @@ function projectInventoryItem(item) {
     ownersNum,
     risk,
     riskKnown: item.canonical?.riskKnown ?? (item.risk !== "Unrated" && item.risk !== "Unknown"),
+    primaryProfile: item.canonical?.primaryProfile ?? "Ok\xE4nd profil",
+    profileTags: item.derived?.profileTags ?? [],
     serviceDueLevel: item.canonical?.serviceDueLevel ?? "Unknown",
     serviceCostMin: item.canonical?.serviceCostMin ?? null,
     serviceCostBucket: item.canonical?.serviceCostBucket ?? "Ok\xE4nt",
@@ -282,6 +296,8 @@ function matchesSearch(item, tokenGroups) {
     item.body,
     item.reg,
     item.risk,
+    item.canonical?.primaryProfile,
+    ...item.derived?.profileTags ?? [],
     item.riskNote,
     item.serviceDue,
     item.serviceCost,
@@ -484,7 +500,7 @@ function matchesInventoryFilters(item, filters, excludedKey) {
   const tokenGroups = parseSearchQuery(filters.search ?? "");
   const riskStatus = filters.riskStatus ?? "All";
   const registryVerified = filters.registryVerified ?? "All";
-  return (excludedKey === "brand" || matchesSelectFilter(filters.brand, projected.brand)) && (excludedKey === "model" || matchesSelectFilter(filters.model, projected.modelName)) && (excludedKey === "series" || matchesSelectFilter(filters.series, projected.modelSeries)) && (excludedKey === "engine" || matchesSelectFilter(filters.engine, projected.engine)) && (excludedKey === "trim" || matchesSelectFilter(filters.trim, projected.trim)) && (excludedKey === "location" || matchesSelectFilter(filters.location, projected.location)) && (excludedKey === "region" || matchesSelectFilter(filters.region, projected.region)) && (excludedKey === "distance" || matchesSelectFilter(filters.distance, projected.distanceBucketFromUppsala)) && matchesSearch(item, tokenGroups) && (filters.maxPrice == null || projected.priceNum != null && projected.priceNum <= filters.maxPrice) && (filters.maxMileage == null || projected.mileageMil != null && projected.mileageMil <= filters.maxMileage) && (excludedKey === "fuel" || matchesSelectFilter(filters.fuel, projected.fuel)) && (excludedKey === "gearbox" || matchesSelectFilter(filters.gearbox, projected.gearboxDriveability)) && (excludedKey === "seller" || matchesSelectFilter(filters.seller, projected.sellerType)) && (excludedKey === "body" || matchesSelectFilter(filters.body, projected.bodyType)) && (excludedKey === "risk" || matchesSelectFilter(filters.risk, projected.risk ?? "Unknown")) && (excludedKey === "riskStatus" || riskStatus === "All" || riskStatus === "known" && projected.riskKnown || riskStatus === "unknown" && !projected.riskKnown) && (excludedKey === "serviceDue" || matchesSelectFilter(filters.serviceDue, projected.serviceDueLevel)) && (excludedKey === "serviceCost" || matchesSelectFilter(filters.serviceCost, projected.serviceCostBucket)) && (excludedKey === "priceBucket" || matchesSelectFilter(filters.priceBucket, projected.priceBucket)) && (excludedKey === "mileageBucket" || matchesSelectFilter(filters.mileageBucket, projected.mileageBucket)) && (excludedKey === "ageBucket" || matchesSelectFilter(filters.ageBucket, projected.ageBucket)) && (excludedKey === "ownersBucket" || matchesSelectFilter(filters.ownersBucket, projected.ownersBucket)) && (excludedKey === "pricePerMilBucket" || matchesSelectFilter(filters.pricePerMilBucket, projected.pricePerMilBucket)) && (excludedKey === "debtStatus" || matchesSelectFilter(filters.debtStatus, projected.debtStatus)) && (excludedKey === "registryVerified" || registryVerified === "All" || registryVerified === "true" && projected.registryVerified || registryVerified === "false" && !projected.registryVerified);
+  return (excludedKey === "brand" || matchesSelectFilter(filters.brand, projected.brand)) && (excludedKey === "model" || matchesSelectFilter(filters.model, projected.modelName)) && (excludedKey === "series" || matchesSelectFilter(filters.series, projected.modelSeries)) && (excludedKey === "engine" || matchesSelectFilter(filters.engine, projected.engine)) && (excludedKey === "trim" || matchesSelectFilter(filters.trim, projected.trim)) && (excludedKey === "location" || matchesSelectFilter(filters.location, projected.location)) && (excludedKey === "region" || matchesSelectFilter(filters.region, projected.region)) && (excludedKey === "distance" || matchesSelectFilter(filters.distance, projected.distanceBucketFromUppsala)) && matchesSearch(item, tokenGroups) && (filters.maxPrice == null || projected.priceNum != null && projected.priceNum <= filters.maxPrice) && (filters.maxMileage == null || projected.mileageMil != null && projected.mileageMil <= filters.maxMileage) && (excludedKey === "fuel" || matchesSelectFilter(filters.fuel, projected.fuel)) && (excludedKey === "gearbox" || matchesSelectFilter(filters.gearbox, projected.gearboxDriveability)) && (excludedKey === "seller" || matchesSelectFilter(filters.seller, projected.sellerType)) && (excludedKey === "body" || matchesSelectFilter(filters.body, projected.bodyType)) && (excludedKey === "risk" || matchesSelectFilter(filters.risk, projected.risk ?? "Unknown")) && (excludedKey === "primaryProfile" || matchesSelectFilter(filters.primaryProfile, projected.primaryProfile)) && (excludedKey === "profileTag" || !filters.profileTag || filters.profileTag === "All" || projected.profileTags.includes(filters.profileTag)) && (excludedKey === "riskStatus" || riskStatus === "All" || riskStatus === "known" && projected.riskKnown || riskStatus === "unknown" && !projected.riskKnown) && (excludedKey === "serviceDue" || matchesSelectFilter(filters.serviceDue, projected.serviceDueLevel)) && (excludedKey === "serviceCost" || matchesSelectFilter(filters.serviceCost, projected.serviceCostBucket)) && (excludedKey === "priceBucket" || matchesSelectFilter(filters.priceBucket, projected.priceBucket)) && (excludedKey === "mileageBucket" || matchesSelectFilter(filters.mileageBucket, projected.mileageBucket)) && (excludedKey === "ageBucket" || matchesSelectFilter(filters.ageBucket, projected.ageBucket)) && (excludedKey === "ownersBucket" || matchesSelectFilter(filters.ownersBucket, projected.ownersBucket)) && (excludedKey === "pricePerMilBucket" || matchesSelectFilter(filters.pricePerMilBucket, projected.pricePerMilBucket)) && (excludedKey === "debtStatus" || matchesSelectFilter(filters.debtStatus, projected.debtStatus)) && (excludedKey === "registryVerified" || registryVerified === "All" || registryVerified === "true" && projected.registryVerified || registryVerified === "false" && !projected.registryVerified);
 }
 function filterAndSortInventory(items, filters, sortValues) {
   return items.filter((item) => matchesInventoryFilters(item, filters)).sort((a, b) => compareItems(a, b, sortValues));
@@ -495,8 +511,9 @@ function buildInventoryFilterOptions(items, filters) {
     const counts = /* @__PURE__ */ new Map();
     for (const item of items) {
       if (!matchesInventoryFilters(item, filters, key)) continue;
-      const value = getInventoryFilterValue(projectInventoryItem(item), key);
-      counts.set(value, (counts.get(value) ?? 0) + 1);
+      for (const value of getInventoryFilterValues(projectInventoryItem(item), key)) {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
     }
     const selectedValue = filters[key];
     if (selectedValue && selectedValue !== "All" && !counts.has(selectedValue)) {
@@ -2899,6 +2916,8 @@ function createFilterDefaults(maxPrice) {
     seller: "All",
     body: "All",
     risk: "All",
+    primaryProfile: "All",
+    profileTag: "All",
     riskStatus: "All",
     serviceDue: "All",
     serviceCost: "All",
@@ -3013,6 +3032,8 @@ function toInventoryFilters(filters) {
     seller: filters.seller,
     body: filters.body,
     risk: filters.risk,
+    primaryProfile: filters.primaryProfile,
+    profileTag: filters.profileTag,
     riskStatus: filters.riskStatus,
     serviceDue: filters.serviceDue,
     serviceCost: filters.serviceCost,
@@ -3032,6 +3053,48 @@ function selectInventoryResult(state) {
   const data = state.data.data;
   if (!data) return null;
   return queryInventory(data.inventory, toInventoryFilters(state.ui.filters), selectSortValues(state));
+}
+
+// src/shortcuts.ts
+function createShortcutDefinitions(maxPriceValue) {
+  return [
+    {
+      id: "prius",
+      title: "Prius",
+      note: "Bra f\xF6rstaval.",
+      values: { brand: "Toyota", model: "Prius", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
+    },
+    {
+      id: "jazz",
+      title: "Jazz",
+      note: "Bra familjeval.",
+      values: { brand: "Honda", model: "Jazz", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
+    },
+    {
+      id: "city",
+      title: "Aygo / 107 / C1",
+      note: "Sm\xE5 stadsbilar.",
+      values: { search: "Aygo | 107 | C1", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
+    },
+    {
+      id: "avoid",
+      title: "Undvik",
+      note: "Yaris/Auris/207/Polo.",
+      values: { search: "Yaris | Auris | 207 | Polo", risk: "Avoid", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
+    },
+    {
+      id: "lowmiles",
+      title: "L\xE5g mil",
+      note: "Visa l\xE4gst mil f\xF6rst.",
+      values: { maxMileage: "15000", sort1: "mileage-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
+    },
+    {
+      id: "clear",
+      title: "Nollst\xE4ll",
+      note: "Tillbaka till alla.",
+      values: { maxPrice: maxPriceValue, sort1: "none", sort2: "none", sort3: "none" }
+    }
+  ];
 }
 
 // src/app.ts
@@ -3065,6 +3128,8 @@ var elements = {
   seller: must("seller"),
   body: must("body"),
   risk: must("risk"),
+  primaryProfile: must("primary-profile"),
+  profileTag: must("profile-tag"),
   riskStatus: must("risk-status"),
   serviceDue: must("service-due"),
   serviceCost: must("service-cost"),
@@ -3096,6 +3161,8 @@ var filterSelectControls = [
   { key: "seller", control: elements.seller },
   { key: "body", control: elements.body },
   { key: "risk", control: elements.risk },
+  { key: "primaryProfile", control: elements.primaryProfile },
+  { key: "profileTag", control: elements.profileTag },
   { key: "riskStatus", control: elements.riskStatus },
   { key: "serviceDue", control: elements.serviceDue },
   { key: "serviceCost", control: elements.serviceCost },
@@ -3184,6 +3251,7 @@ function pricePerMilLabel(value) {
 }
 function formatValue(value) {
   if (value === null || value === void 0 || value === "") return "\u2014";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "\u2014";
   if (typeof value === "boolean") return value ? "Ja" : "Nej";
   return String(value);
 }
@@ -3220,6 +3288,13 @@ function renderItemDetails(item) {
   ])}
         ${renderFieldGroup("Analys", [
     ["Risk bed\xF6md", projected.riskKnown],
+    ["Prim\xE4r profil", item.canonical?.primaryProfile],
+    ["Profiltaggar", item.derived?.profileTags],
+    ["Profilk\xE4lla", item.canonical?.profileSource],
+    ["Forskningsprofil", item.canonical?.researchProfile],
+    ["Refreshprio", item.canonical?.refreshPriority],
+    ["Riskk\xE4lla", item.canonical?.riskSource],
+    ["Risks\xE4kerhet", item.canonical?.riskConfidence],
     ["Prisintervall", projected.priceBucket],
     ["Miltalshink", projected.mileageBucket],
     ["\xC5lder", projected.age],
@@ -3312,48 +3387,8 @@ function populateFilterSelect(select, options, selectedValue = "All") {
   }));
   populateSelect(select, values, selectedValue, true);
 }
-function shortcutDefinitions(maxPriceValue) {
-  return [
-    {
-      id: "prius",
-      title: "Prius",
-      note: "Bra f\xF6rstaval.",
-      values: { brand: "Toyota", model: "Prius", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
-    },
-    {
-      id: "jazz",
-      title: "Jazz",
-      note: "Bra familjeval.",
-      values: { brand: "Honda", model: "Jazz", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
-    },
-    {
-      id: "city",
-      title: "Aygo / 107 / C1",
-      note: "Sm\xE5 stadsbilar.",
-      values: { search: "Aygo | 107 | C1", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
-    },
-    {
-      id: "avoid",
-      title: "Undvik",
-      note: "Yaris/Auris/207/Polo.",
-      values: { search: "Yaris | Auris | 207 | Polo", risk: "Avoid", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
-    },
-    {
-      id: "lowmiles",
-      title: "L\xE5g mil",
-      note: "Visa l\xE4gst mil f\xF6rst.",
-      values: { maxMileage: "15000", sort1: "mileage-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue }
-    },
-    {
-      id: "clear",
-      title: "Nollst\xE4ll",
-      note: "Tillbaka till alla.",
-      values: { maxPrice: maxPriceValue, sort1: "none", sort2: "none", sort3: "none" }
-    }
-  ];
-}
 function renderShortcuts(store, maxPriceValue) {
-  const shortcuts = shortcutDefinitions(maxPriceValue);
+  const shortcuts = createShortcutDefinitions(maxPriceValue);
   elements.shortcutRoot.innerHTML = `<div class="shortcut-grid">${shortcuts.map(
     (shortcut) => `
         <button class="shortcut-card" type="button" data-shortcut="${shortcut.id}">

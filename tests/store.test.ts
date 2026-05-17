@@ -15,6 +15,7 @@ import {
   setSortValue,
   type AppData,
 } from "../src/store.js";
+import { createShortcutDefinitions } from "../src/shortcuts.js";
 import type { InventoryItem } from "../src/core.js";
 
 function makeItem(config: {
@@ -25,6 +26,9 @@ function makeItem(config: {
   mileageMil: number;
   yearNum: number;
 }): InventoryItem {
+  const primaryProfile = config.modelName === "Prius" ? "Toyota Prius hybrid" : `${config.brand} ${config.modelName}`;
+  const profileTags =
+    config.modelName === "Prius" ? ["Hybrid", "Toyota/Lexus hybrid"] : config.modelName === "Jazz" ? ["Småbil", "CVT"] : [config.brand];
   return {
     model: `${config.brand} ${config.modelName}`,
     trim: "Base",
@@ -68,6 +72,9 @@ function makeItem(config: {
       ownersNum: 1,
       risk: "Lower",
       riskKnown: true,
+      primaryProfile,
+      profileSource: "known-model-family",
+      refreshPriority: "low",
       serviceDueLevel: "Now",
       serviceCostMin: 1000,
       serviceCostMax: 2000,
@@ -86,6 +93,7 @@ function makeItem(config: {
       pricePerMilBucket: "1,5-2,5 kr/mil",
       riskRank: 0,
       hasDebt: false,
+      profileTags,
     },
     display: {
       name: `${config.brand} ${config.modelName}`,
@@ -103,6 +111,7 @@ function makeItem(config: {
       seller: "Privat",
       owners: "1",
       risk: "Låg",
+      primaryProfile,
       serviceDue: "Nu",
       serviceCost: "1 000 kr",
       reg: config.reg,
@@ -128,6 +137,14 @@ function makeData(items: InventoryItem[]): AppData {
   };
 }
 
+function applyShortcut(store: ReturnType<typeof createAppStore>, shortcutId: string, maxPrice = 50000): void {
+  const shortcuts = Object.fromEntries(createShortcutDefinitions(String(maxPrice)).map((shortcut) => [shortcut.id, shortcut]));
+  const shortcut = shortcuts[shortcutId];
+  assert.ok(shortcut, `Expected shortcut ${shortcutId} to exist`);
+  store.dispatch(resetUiState(createUiDefaults(maxPrice)));
+  store.dispatch(applyPreset(shortcut.values));
+}
+
 test("ui defaults start neutral", () => {
   assert.deepEqual(createUiDefaults(50000), {
     filters: {
@@ -147,6 +164,8 @@ test("ui defaults start neutral", () => {
       seller: "All",
       body: "All",
       risk: "All",
+      primaryProfile: "All",
+      profileTag: "All",
       riskStatus: "All",
       serviceDue: "All",
       serviceCost: "All",
@@ -186,6 +205,16 @@ test("data actions and selectors reflect loaded data", () => {
   store.dispatch(setFilterValue({ key: "brand", value: "Toyota" }));
   const toyotaResult = selectInventoryResult(store.getState());
   assert.deepEqual(toyotaResult?.rows.map((item) => item.reg), ["AAA111"]);
+
+  store.dispatch(resetUiState(createUiDefaults(data.meta?.maxPrice)));
+  store.dispatch(setFilterValue({ key: "primaryProfile", value: "Toyota Prius hybrid" }));
+  const profileResult = selectInventoryResult(store.getState());
+  assert.deepEqual(profileResult?.rows.map((item) => item.reg), ["AAA111"]);
+
+  store.dispatch(resetUiState(createUiDefaults(data.meta?.maxPrice)));
+  store.dispatch(setFilterValue({ key: "profileTag", value: "CVT" }));
+  const tagResult = selectInventoryResult(store.getState());
+  assert.deepEqual(tagResult?.rows.map((item) => item.reg), ["BBB222"]);
 
   store.dispatch(setSortValue({ key: "sort1", value: "price-asc" }));
   store.dispatch(setInventoryView("cards"));
@@ -244,4 +273,45 @@ test("shortcut-style reset then preset replaces prior filter state", () => {
   assert.equal(store.getState().ui.sort.sort1, "price-asc");
   assert.equal(store.getState().ui.sort.sort2, "none");
   assert.equal(store.getState().ui.sort.sort3, "none");
+});
+
+test("shortcut definitions cover the expected preset intents", () => {
+  const shortcuts = Object.fromEntries(createShortcutDefinitions("50000").map((shortcut) => [shortcut.id, shortcut]));
+
+  assert.equal(shortcuts.prius.values.brand, "Toyota");
+  assert.equal(shortcuts.prius.values.model, "Prius");
+  assert.equal(shortcuts.jazz.values.brand, "Honda");
+  assert.equal(shortcuts.city.values.search, "Aygo | 107 | C1");
+  assert.equal(shortcuts.avoid.values.risk, "Avoid");
+  assert.equal(shortcuts.lowmiles.values.maxMileage, "15000");
+  assert.equal(shortcuts.clear.values.sort1, "none");
+});
+
+test("switching between shortcuts replaces prior shortcut state", () => {
+  const store = createAppStore();
+  store.dispatch(resetUiState(createUiDefaults(50000)));
+
+  applyShortcut(store, "avoid");
+  assert.equal(store.getState().ui.filters.search, "Yaris | Auris | 207 | Polo");
+  assert.equal(store.getState().ui.filters.risk, "Avoid");
+  assert.equal(store.getState().ui.sort.sort1, "price-asc");
+
+  applyShortcut(store, "lowmiles");
+  assert.equal(store.getState().ui.filters.search, "");
+  assert.equal(store.getState().ui.filters.risk, "All");
+  assert.equal(store.getState().ui.filters.maxMileage, "15000");
+  assert.equal(store.getState().ui.sort.sort1, "mileage-asc");
+});
+
+test("switching from a model shortcut to clear returns to defaults", () => {
+  const store = createAppStore();
+  store.dispatch(resetUiState(createUiDefaults(50000)));
+
+  applyShortcut(store, "prius");
+  assert.equal(store.getState().ui.filters.brand, "Toyota");
+  assert.equal(store.getState().ui.filters.model, "Prius");
+  assert.equal(store.getState().ui.sort.sort1, "price-asc");
+
+  applyShortcut(store, "clear");
+  assert.deepEqual(store.getState().ui, createUiDefaults(50000));
 });

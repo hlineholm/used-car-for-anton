@@ -21,20 +21,13 @@ import {
   setSortValue,
   type AppData,
   type AppStore,
-  type FilterPreset,
   type InventoryUiFilters,
   type InventoryUiSort,
   type InventoryView,
   type SortKey,
   type TextFilterKey,
 } from "./store.js";
-
-interface Shortcut {
-  id: string;
-  title: string;
-  note: string;
-  values: FilterPreset;
-}
+import { createShortcutDefinitions } from "./shortcuts.js";
 
 const DATA_URL = "processed-data.json";
 const PAGE_TITLE = "Bilar";
@@ -68,6 +61,8 @@ const elements = {
   seller: must<HTMLSelectElement>("seller"),
   body: must<HTMLSelectElement>("body"),
   risk: must<HTMLSelectElement>("risk"),
+  primaryProfile: must<HTMLSelectElement>("primary-profile"),
+  profileTag: must<HTMLSelectElement>("profile-tag"),
   riskStatus: must<HTMLSelectElement>("risk-status"),
   serviceDue: must<HTMLSelectElement>("service-due"),
   serviceCost: must<HTMLSelectElement>("service-cost"),
@@ -100,6 +95,8 @@ const filterSelectControls: Array<{ key: InventorySelectFilterKey; control: HTML
   { key: "seller", control: elements.seller },
   { key: "body", control: elements.body },
   { key: "risk", control: elements.risk },
+  { key: "primaryProfile", control: elements.primaryProfile },
+  { key: "profileTag", control: elements.profileTag },
   { key: "riskStatus", control: elements.riskStatus },
   { key: "serviceDue", control: elements.serviceDue },
   { key: "serviceCost", control: elements.serviceCost },
@@ -204,6 +201,7 @@ function pricePerMilLabel(value: number | null | undefined): string {
 
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
   if (typeof value === "boolean") return value ? "Ja" : "Nej";
   return String(value);
 }
@@ -244,6 +242,13 @@ function renderItemDetails(item: InventoryItem): string {
         ])}
         ${renderFieldGroup("Analys", [
           ["Risk bedömd", projected.riskKnown],
+          ["Primär profil", item.canonical?.primaryProfile],
+          ["Profiltaggar", item.derived?.profileTags],
+          ["Profilkälla", item.canonical?.profileSource],
+          ["Forskningsprofil", item.canonical?.researchProfile],
+          ["Refreshprio", item.canonical?.refreshPriority],
+          ["Riskkälla", item.canonical?.riskSource],
+          ["Risksäkerhet", item.canonical?.riskConfidence],
           ["Prisintervall", projected.priceBucket],
           ["Miltalshink", projected.mileageBucket],
           ["Ålder", projected.age],
@@ -372,49 +377,8 @@ function populateFilterSelect(
   populateSelect(select, values, selectedValue, true);
 }
 
-function shortcutDefinitions(maxPriceValue: string): Shortcut[] {
-  return [
-    {
-      id: "prius",
-      title: "Prius",
-      note: "Bra förstaval.",
-      values: { brand: "Toyota", model: "Prius", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue },
-    },
-    {
-      id: "jazz",
-      title: "Jazz",
-      note: "Bra familjeval.",
-      values: { brand: "Honda", model: "Jazz", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue },
-    },
-    {
-      id: "city",
-      title: "Aygo / 107 / C1",
-      note: "Små stadsbilar.",
-      values: { search: "Aygo | 107 | C1", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue },
-    },
-    {
-      id: "avoid",
-      title: "Undvik",
-      note: "Yaris/Auris/207/Polo.",
-      values: { search: "Yaris | Auris | 207 | Polo", risk: "Avoid", sort1: "price-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue },
-    },
-    {
-      id: "lowmiles",
-      title: "Låg mil",
-      note: "Visa lägst mil först.",
-      values: { maxMileage: "15000", sort1: "mileage-asc", sort2: "none", sort3: "none", maxPrice: maxPriceValue },
-    },
-    {
-      id: "clear",
-      title: "Nollställ",
-      note: "Tillbaka till alla.",
-      values: { maxPrice: maxPriceValue, sort1: "none", sort2: "none", sort3: "none" },
-    },
-  ];
-}
-
 function renderShortcuts(store: AppStore, maxPriceValue: string): void {
-  const shortcuts = shortcutDefinitions(maxPriceValue);
+  const shortcuts = createShortcutDefinitions(maxPriceValue);
   elements.shortcutRoot.innerHTML = `<div class="shortcut-grid">${shortcuts
     .map(
       (shortcut) => `

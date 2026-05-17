@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { assessVehicleRisk } = require("./risk-engine.cjs");
 
 const inPath = path.resolve(__dirname, "..", "data.json");
 const outDir = path.resolve(__dirname, "..", "dist");
@@ -672,9 +673,37 @@ const processed = inventory.map((item) => {
   const canonicalGearbox = classifyGearbox(item.gearbox);
   const canonicalBody = classifyBody(item.body);
   const canonicalSeller = classifySeller(item.seller);
-  const canonicalRisk = classifyRisk(item.risk);
-  const canonicalServiceCost = parseServiceCostRange(item.serviceCost);
-  const canonicalServiceDueLevel = classifyServiceDue(item.serviceDue);
+  const riskAssessment = assessVehicleRisk({
+    brand: rawBrandModel.brand,
+    modelName: withSeries.modelName,
+    modelSeries: withSeries.modelSeries,
+    engine: engineSplit.engine,
+    trim: compactParts([engineSplit.trim, item.trim]),
+    priceNum: canonicalPriceNum,
+    mileageMil: canonicalMileageMil,
+    yearNum: canonicalYearNum,
+    fuel: canonicalFuel,
+    gearboxDriveability: canonicalGearbox.gearboxDriveability,
+    gearboxDetail: canonicalGearbox.gearboxDetail,
+    bodyType: canonicalBody,
+    sellerType: canonicalSeller,
+    ownersNum: canonicalOwnersNum,
+    debtStatus: classifyDebt(item.debt),
+  });
+  const canonicalRisk = {
+    risk: riskAssessment.risk,
+    riskKnown: true,
+    riskSource: riskAssessment.source,
+    riskConfidence: riskAssessment.confidence,
+    primaryProfileId: riskAssessment.primaryProfileId,
+    primaryProfile: riskAssessment.primaryProfile,
+    researchProfileId: riskAssessment.researchProfileId,
+    researchProfile: riskAssessment.researchProfile,
+    profileSource: riskAssessment.profileSource,
+    refreshPriority: riskAssessment.refreshPriority,
+  };
+  const canonicalServiceCost = parseServiceCostRange(riskAssessment.serviceCost);
+  const canonicalServiceDueLevel = classifyServiceDue(riskAssessment.serviceDue);
   const canonicalLocation = normalizeString(item.location) || "Okänd";
   const canonicalRegion = countyFromLocation(canonicalLocation);
   const canonicalDistanceBucket = distanceBucketFromLocation(canonicalLocation, canonicalRegion);
@@ -725,6 +754,8 @@ const processed = inventory.map((item) => {
     ]),
     riskRank: canonicalRisk.risk ? riskSortRank[canonicalRisk.risk] : 99,
     hasDebt: canonicalDebtStatus === "Yes",
+    riskReasons: riskAssessment.reasons,
+    profileTags: riskAssessment.profileTags,
   };
 
   const canonical = {
@@ -747,6 +778,14 @@ const processed = inventory.map((item) => {
     ownersNum: canonicalOwnersNum,
     risk: canonicalRisk.risk,
     riskKnown: canonicalRisk.riskKnown,
+    riskSource: canonicalRisk.riskSource,
+    riskConfidence: canonicalRisk.riskConfidence,
+    primaryProfileId: canonicalRisk.primaryProfileId,
+    primaryProfile: canonicalRisk.primaryProfile,
+    researchProfileId: canonicalRisk.researchProfileId,
+    researchProfile: canonicalRisk.researchProfile,
+    profileSource: canonicalRisk.profileSource,
+    refreshPriority: canonicalRisk.refreshPriority,
     serviceDueLevel: canonicalServiceDueLevel,
     serviceCostMin: canonicalServiceCost.min,
     serviceCostMax: canonicalServiceCost.max,
@@ -772,6 +811,7 @@ const processed = inventory.map((item) => {
     seller: canonical.sellerType,
     owners: canonical.ownersNum == null ? "Okänt" : String(canonical.ownersNum),
     risk: riskLabel(canonical.risk),
+    primaryProfile: canonical.primaryProfile || "Okänd profil",
     serviceDue: serviceDueLabel(canonical.serviceDueLevel),
     serviceCost:
       canonical.serviceCostMin == null
@@ -795,10 +835,12 @@ const processed = inventory.map((item) => {
     canonical.sellerType,
     display.reg,
     display.risk,
-    item.riskNote,
-    item.serviceDue,
-    item.serviceCost,
-    item.forumWatchouts,
+    canonical.primaryProfile,
+    ...(riskAssessment.profileTags || []),
+    riskAssessment.riskNote,
+    riskAssessment.serviceDue,
+    riskAssessment.serviceCost,
+    riskAssessment.forumWatchouts,
   ]
     .filter(Boolean)
     .join(" ")
@@ -815,6 +857,8 @@ const processed = inventory.map((item) => {
     body: canonical.bodyType,
     reg: display.reg,
     risk: canonical.risk || "Unknown",
+    riskNote: riskAssessment.riskNote,
+    forumWatchouts: riskAssessment.forumWatchouts,
     serviceDue: display.serviceDue,
     serviceCost: display.serviceCost,
     year: display.year,
@@ -856,6 +900,73 @@ const processed = inventory.map((item) => {
 
 const collator = new Intl.Collator("sv", { sensitivity: "base" });
 const sortStrings = (values) => [...new Set(values.filter(Boolean))].sort((a, b) => collator.compare(a, b));
+const refreshPriorityRank = { high: 0, medium: 1, low: 2 };
+function buildProfileCatalog(items) {
+  const profiles = new Map();
+
+  for (const item of items) {
+    const canonical = item.canonical || {};
+    const derived = item.derived || {};
+    const profileId = canonical.primaryProfileId || "unknown-profile";
+    const profileLabel = canonical.primaryProfile || "Okänd profil";
+    const risk = canonical.risk || "Unknown";
+    const confidence = canonical.riskConfidence || "unknown";
+
+    if (!profiles.has(profileId)) {
+      profiles.set(profileId, {
+        id: profileId,
+        label: profileLabel,
+        researchProfileId: canonical.researchProfileId || profileId,
+        researchProfile: canonical.researchProfile || profileLabel,
+        profileSource: canonical.profileSource || "generic-fallback",
+        refreshPriority: canonical.refreshPriority || "high",
+        count: 0,
+        riskDistribution: { Lower: 0, Medium: 0, Higher: 0, Avoid: 0, Unknown: 0 },
+        confidenceDistribution: { high: 0, medium: 0, low: 0, unknown: 0 },
+        tags: new Set(),
+        sampleModels: new Set(),
+        sampleRegs: new Set(),
+      });
+    }
+
+    const entry = profiles.get(profileId);
+    entry.count += 1;
+    entry.riskDistribution[risk] = (entry.riskDistribution[risk] || 0) + 1;
+    entry.confidenceDistribution[confidence] = (entry.confidenceDistribution[confidence] || 0) + 1;
+    for (const tag of derived.profileTags || []) {
+      entry.tags.add(tag);
+    }
+    if (item.display?.name || item.model) {
+      entry.sampleModels.add(item.display?.name || item.model);
+    }
+    if (canonical.regNormalized) {
+      entry.sampleRegs.add(canonical.regNormalized);
+    }
+  }
+
+  return [...profiles.values()]
+    .map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      researchProfileId: entry.researchProfileId,
+      researchProfile: entry.researchProfile,
+      profileSource: entry.profileSource,
+      refreshPriority: entry.refreshPriority,
+      count: entry.count,
+      riskDistribution: entry.riskDistribution,
+      confidenceDistribution: entry.confidenceDistribution,
+      tags: [...entry.tags].sort((a, b) => collator.compare(a, b)),
+      sampleModels: [...entry.sampleModels].sort((a, b) => collator.compare(a, b)).slice(0, 6),
+      sampleRegs: [...entry.sampleRegs].slice(0, 6),
+    }))
+    .sort(
+      (a, b) =>
+        (refreshPriorityRank[a.refreshPriority] ?? Number.MAX_SAFE_INTEGER) -
+          (refreshPriorityRank[b.refreshPriority] ?? Number.MAX_SAFE_INTEGER) ||
+        b.count - a.count ||
+        collator.compare(a.label, b.label),
+    );
+}
 const brands = sortStrings(processed.map((item) => item.canonical.brand));
 const modelsByBrand = Object.fromEntries(
   brands.map((brand) => [
@@ -870,6 +981,9 @@ const gearboxes = sortStrings(processed.map((item) => item.canonical.gearboxDriv
 const sellers = sortStrings(processed.map((item) => item.canonical.sellerType));
 const bodies = sortStrings(processed.map((item) => item.canonical.bodyType));
 const risks = ["Lower", "Medium", "Higher", "Avoid"];
+const primaryProfiles = sortStrings(processed.map((item) => item.canonical.primaryProfile));
+const profileTags = sortStrings(processed.flatMap((item) => item.derived.profileTags || []));
+const profiles = buildProfileCatalog(processed);
 const distanceBuckets = ["0-25 km", "25-50 km", "50-100 km", "100-200 km", "200+ km"];
 const maxPrice = Math.max(...processed.map((item) => item.canonical.priceNum ?? 0), 0);
 const maxMileage = Math.max(...processed.map((item) => item.canonical.mileageMil ?? 0), 0);
@@ -962,6 +1076,7 @@ const out = {
   meta: {
     generatedAt: new Date().toISOString(),
     count: processed.length,
+    profileCount: profiles.length,
     maxPrice,
     maxMileage,
   },
@@ -976,6 +1091,8 @@ const out = {
     sellers,
     bodies,
     risks,
+    primaryProfiles,
+    profileTags,
     priceBuckets,
     mileageBuckets,
     ageBuckets,
@@ -986,6 +1103,7 @@ const out = {
     debtStatuses,
     registryVerifiedOptions,
   },
+  profiles,
   inventory: processed,
 };
 

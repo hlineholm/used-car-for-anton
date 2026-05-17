@@ -64,6 +64,8 @@ function makeStructuredItem(config: {
   seller: string;
   risk: string | null;
   riskKnown: boolean;
+  primaryProfile?: string;
+  profileTags?: string[];
   serviceDue: string;
   serviceCostMin: number | null;
   serviceCostBucket: string;
@@ -119,6 +121,7 @@ function makeStructuredItem(config: {
       ownersNum: config.ownersNum,
       risk: config.risk,
       riskKnown: config.riskKnown,
+      primaryProfile: config.primaryProfile,
       serviceDueLevel: config.serviceDue,
       serviceCostMin: config.serviceCostMin,
       serviceCostBucket: config.serviceCostBucket,
@@ -134,6 +137,7 @@ function makeStructuredItem(config: {
       ownersBucket: config.ownersBucket,
       pricePerMil: config.pricePerMil,
       pricePerMilBucket: config.pricePerMilBucket,
+      profileTags: config.profileTags ?? [],
     },
     display: {
       name: displayName,
@@ -151,6 +155,7 @@ function makeStructuredItem(config: {
       seller: config.seller,
       owners: String(config.ownersNum),
       risk: config.risk ?? "Ej bedömd",
+      primaryProfile: config.primaryProfile ?? "Okänd profil",
       serviceDue: config.serviceDue,
       serviceCost: config.serviceCostMin == null ? "Okänt" : `${config.serviceCostMin} kr`,
       reg: config.reg,
@@ -286,6 +291,8 @@ test("new structured sort fields use canonical and derived values", () => {
       seller: "Handlare",
       risk: "Lower",
       riskKnown: true,
+      primaryProfile: "Toyota Prius hybrid",
+      profileTags: ["Hybrid", "Toyota/Lexus hybrid"],
       serviceDue: "Soon",
       serviceCostMin: 3000,
       serviceCostBucket: "0-5k",
@@ -408,6 +415,8 @@ test("filterAndSortInventory covers filter and sort combinations for structured 
       seller: "Handlare",
       risk: "Lower",
       riskKnown: true,
+      primaryProfile: "Toyota Prius hybrid",
+      profileTags: ["Hybrid", "Toyota/Lexus hybrid"],
       serviceDue: "Soon",
       serviceCostMin: 3000,
       serviceCostBucket: "0-5k",
@@ -716,6 +725,8 @@ test("queryInventory derives rows and global filter options from one state", () 
       seller: "Handlare",
       risk: "Lower",
       riskKnown: true,
+      primaryProfile: "Toyota Prius hybrid",
+      profileTags: ["Hybrid", "Toyota/Lexus hybrid"],
       serviceDue: "Soon",
       serviceCostMin: 3000,
       serviceCostBucket: "0-5k",
@@ -748,6 +759,8 @@ test("queryInventory derives rows and global filter options from one state", () 
       seller: "Privat",
       risk: null,
       riskKnown: false,
+      primaryProfile: "Toyota Aygo manuell bensin",
+      profileTags: ["Småbil"],
       serviceDue: "Now",
       serviceCostMin: 6000,
       serviceCostBucket: "5-10k",
@@ -780,6 +793,8 @@ test("queryInventory derives rows and global filter options from one state", () 
       seller: "Privat",
       risk: "Medium",
       riskKnown: true,
+      primaryProfile: "Honda Jazz",
+      profileTags: ["Småbil", "CVT"],
       serviceDue: "Later",
       serviceCostMin: 4000,
       serviceCostBucket: "0-5k",
@@ -812,6 +827,93 @@ test("queryInventory derives rows and global filter options from one state", () 
   ]);
   assert.deepEqual(result.options.riskStatus.map((option) => [option.value, option.count]), [["known", 1]]);
   assert.deepEqual(result.options.location.map((option) => [option.value, option.count]), [["Uppsala", 1]]);
+  assert.deepEqual(result.options.primaryProfile.map((option) => [option.value, option.count]), [["Toyota Prius hybrid", 1]]);
+  assert.deepEqual(result.options.profileTag.map((option) => [option.value, option.count]), [
+    ["Hybrid", 1],
+    ["Toyota/Lexus hybrid", 1],
+  ]);
+});
+
+test("profile filters support both primary profiles and multi-tag matches", () => {
+  const items = [
+    makeStructuredItem({
+      reg: "AAA111",
+      brand: "Toyota",
+      modelName: "Prius",
+      modelSeries: "XW50",
+      engine: "1.8 Hybrid",
+      trim: "Active",
+      priceNum: 40000,
+      mileageMil: 9000,
+      yearNum: 2023,
+      ownersNum: 1,
+      fuel: "Hybrid bensin",
+      gearbox: "Automat",
+      body: "Halvkombi",
+      location: "Uppsala",
+      region: "Uppsala län",
+      distance: "0-25 km",
+      seller: "Handlare",
+      risk: "Lower",
+      riskKnown: true,
+      primaryProfile: "Toyota Prius hybrid",
+      profileTags: ["Hybrid", "Toyota/Lexus hybrid"],
+      serviceDue: "Soon",
+      serviceCostMin: 3000,
+      serviceCostBucket: "0-5k",
+      debtStatus: "No",
+      registryVerified: true,
+      priceBucket: "<=50k",
+      mileageBucket: "<=10k",
+      ageBucket: "<=5 år",
+      ownersBucket: "1",
+      pricePerMil: 4.44,
+      pricePerMilBucket: "2,5-5 kr/mil",
+    }),
+    makeStructuredItem({
+      reg: "BBB222",
+      brand: "Honda",
+      modelName: "Jazz",
+      modelSeries: "GE",
+      engine: "1.4",
+      trim: "Comfort",
+      priceNum: 38000,
+      mileageMil: 15000,
+      yearNum: 2016,
+      ownersNum: 3,
+      fuel: "Bensin",
+      gearbox: "Automat",
+      body: "Halvkombi",
+      location: "Västerås",
+      region: "Västmanlands län",
+      distance: "50-100 km",
+      seller: "Privat",
+      risk: "Medium",
+      riskKnown: true,
+      primaryProfile: "Honda Jazz",
+      profileTags: ["Småbil", "CVT"],
+      serviceDue: "Later",
+      serviceCostMin: 4000,
+      serviceCostBucket: "0-5k",
+      debtStatus: "Yes",
+      registryVerified: true,
+      priceBucket: "<=50k",
+      mileageBucket: "10-20k",
+      ageBucket: "5-10 år",
+      ownersBucket: "3",
+      pricePerMil: 2.53,
+      pricePerMilBucket: "2,5-5 kr/mil",
+    }),
+  ];
+
+  assert.deepEqual(
+    filterAndSortInventory(items, { primaryProfile: "Toyota Prius hybrid" }, ["price-asc"]).map((item) => item.reg),
+    ["AAA111"],
+  );
+  assert.deepEqual(
+    filterAndSortInventory(items, { profileTag: "CVT" }, ["price-asc"]).map((item) => item.reg),
+    ["BBB222"],
+  );
 });
 
 test("generated data exposes an explicit no-sort option", () => {

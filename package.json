@@ -7,7 +7,7 @@
     "build": "tsc -p tsconfig.app.json && esbuild src/app.ts --bundle --format=esm --platform=browser --outfile=app.js && cp dist/core.js core.js && node scripts/normalize.cjs",
     "normalize": "node scripts/normalize.cjs",
     "build:test": "tsc -p tsconfig.test.json",
-    "test": "npm run build:test && node --test build-tests/tests/**/*.test.js"
+    "test": "npm run normalize && npm run build:test && node --test build-tests/tests/**/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.15.24",

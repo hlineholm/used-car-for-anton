@@ -63,6 +63,14 @@ export interface InventoryItem {
     ownersNum?: number | null;
     risk?: string | null;
     riskKnown?: boolean;
+    riskSource?: string;
+    riskConfidence?: string;
+    primaryProfileId?: string;
+    primaryProfile?: string;
+    researchProfileId?: string;
+    researchProfile?: string;
+    profileSource?: string;
+    refreshPriority?: string;
     serviceDueLevel?: string;
     serviceCostMin?: number | null;
     serviceCostMax?: number | null;
@@ -81,6 +89,8 @@ export interface InventoryItem {
     pricePerMilBucket?: string;
     riskRank?: number;
     hasDebt?: boolean;
+    riskReasons?: string[];
+    profileTags?: string[];
   };
   display?: {
     name?: string;
@@ -98,6 +108,7 @@ export interface InventoryItem {
     seller?: string;
     owners?: string;
     risk?: string;
+    primaryProfile?: string;
     serviceDue?: string;
     serviceCost?: string;
     reg?: string;
@@ -131,6 +142,8 @@ export interface ProjectedInventoryItem {
   ownersNum: number | null;
   risk: string | null;
   riskKnown: boolean;
+  primaryProfile: string;
+  profileTags: string[];
   serviceDueLevel: string;
   serviceCostMin: number | null;
   serviceCostBucket: string;
@@ -162,6 +175,8 @@ export interface InventoryFilters {
   seller?: string;
   body?: string;
   risk?: string;
+  primaryProfile?: string;
+  profileTag?: string;
   riskStatus?: string;
   serviceDue?: string;
   serviceCost?: string;
@@ -188,6 +203,8 @@ export type InventorySelectFilterKey =
   | "seller"
   | "body"
   | "risk"
+  | "primaryProfile"
+  | "profileTag"
   | "riskStatus"
   | "serviceDue"
   | "serviceCost"
@@ -285,6 +302,8 @@ const INVENTORY_SELECT_FILTER_KEYS: InventorySelectFilterKey[] = [
   "seller",
   "body",
   "risk",
+  "primaryProfile",
+  "profileTag",
   "riskStatus",
   "serviceDue",
   "serviceCost",
@@ -380,6 +399,10 @@ function getInventoryFilterValue(projected: ProjectedInventoryItem, key: Invento
       return projected.bodyType;
     case "risk":
       return projected.risk ?? "Unknown";
+    case "primaryProfile":
+      return projected.primaryProfile;
+    case "profileTag":
+      return projected.profileTags[0] ?? "Okänd";
     case "riskStatus":
       return projected.riskKnown ? "known" : "unknown";
     case "serviceDue":
@@ -401,6 +424,13 @@ function getInventoryFilterValue(projected: ProjectedInventoryItem, key: Invento
     case "registryVerified":
       return String(projected.registryVerified);
   }
+}
+
+function getInventoryFilterValues(projected: ProjectedInventoryItem, key: InventorySelectFilterKey): string[] {
+  if (key === "profileTag") {
+    return projected.profileTags.length ? projected.profileTags : ["Okänd"];
+  }
+  return [getInventoryFilterValue(projected, key)];
 }
 
 function compareFilterOptionValues(key: InventorySelectFilterKey, aValue: string, bValue: string): number {
@@ -469,6 +499,8 @@ export function projectInventoryItem(item: InventoryItem): ProjectedInventoryIte
     ownersNum,
     risk,
     riskKnown: item.canonical?.riskKnown ?? (item.risk !== "Unrated" && item.risk !== "Unknown"),
+    primaryProfile: item.canonical?.primaryProfile ?? "Okänd profil",
+    profileTags: item.derived?.profileTags ?? [],
     serviceDueLevel: item.canonical?.serviceDueLevel ?? "Unknown",
     serviceCostMin: item.canonical?.serviceCostMin ?? null,
     serviceCostBucket: item.canonical?.serviceCostBucket ?? "Okänt",
@@ -543,6 +575,8 @@ export function matchesSearch(item: InventoryItem, tokenGroups: string[][]): boo
     item.body,
     item.reg,
     item.risk,
+    item.canonical?.primaryProfile,
+    ...(item.derived?.profileTags ?? []),
     item.riskNote,
     item.serviceDue,
     item.serviceCost,
@@ -797,6 +831,11 @@ export function matchesInventoryFilters(
     (excludedKey === "seller" || matchesSelectFilter(filters.seller, projected.sellerType)) &&
     (excludedKey === "body" || matchesSelectFilter(filters.body, projected.bodyType)) &&
     (excludedKey === "risk" || matchesSelectFilter(filters.risk, projected.risk ?? "Unknown")) &&
+    (excludedKey === "primaryProfile" || matchesSelectFilter(filters.primaryProfile, projected.primaryProfile)) &&
+    (excludedKey === "profileTag" ||
+      !filters.profileTag ||
+      filters.profileTag === "All" ||
+      projected.profileTags.includes(filters.profileTag)) &&
     (excludedKey === "riskStatus" ||
       riskStatus === "All" ||
       (riskStatus === "known" && projected.riskKnown) ||
@@ -832,8 +871,9 @@ function buildInventoryFilterOptions(items: InventoryItem[], filters: InventoryF
 
     for (const item of items) {
       if (!matchesInventoryFilters(item, filters, key)) continue;
-      const value = getInventoryFilterValue(projectInventoryItem(item), key);
-      counts.set(value, (counts.get(value) ?? 0) + 1);
+      for (const value of getInventoryFilterValues(projectInventoryItem(item), key)) {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
     }
 
     const selectedValue = filters[key];
