@@ -1,6 +1,6 @@
 import { dedupeSortValues, filterAndSortInventory, parseOptionalNumber, projectInventoryItem, } from "./core.js";
 const DATA_URL = "processed-data.json";
-const DEFAULT_MAX_PRICE = 50000;
+const DEFAULT_MAX_PRICE = Number.POSITIVE_INFINITY;
 const pageMode = "inventory";
 const PAGE_TITLE = "Bilar";
 let appData = null;
@@ -404,6 +404,9 @@ function refreshHierarchyOptions() {
 function renderSummary() {
     document.title = PAGE_TITLE;
 }
+function maxPriceDefault() {
+    return appData?.meta?.maxPrice ?? DEFAULT_MAX_PRICE;
+}
 function setFilters(values) {
     if (values.brand !== undefined) {
         elements.brand.value = String(values.brand);
@@ -477,6 +480,7 @@ function setFilters(values) {
     renderInventory();
 }
 function renderShortcuts() {
+    const maxPriceValue = appData?.meta?.maxPrice ? String(appData.meta.maxPrice) : "";
     const shortcuts = [
         {
             id: "prius",
@@ -492,7 +496,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: "",
                 fuel: "All",
                 gearbox: "All",
@@ -528,7 +532,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: "",
                 fuel: "All",
                 gearbox: "All",
@@ -564,7 +568,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "Aygo | 107 | C1",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: "",
                 fuel: "All",
                 gearbox: "All",
@@ -600,7 +604,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "Yaris | Auris | 207 | Polo",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: "",
                 fuel: "All",
                 gearbox: "All",
@@ -636,7 +640,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: 15000,
                 fuel: "All",
                 gearbox: "All",
@@ -672,7 +676,7 @@ function renderShortcuts() {
                 region: "All",
                 distance: "All",
                 search: "",
-                maxPrice: "50000",
+                maxPrice: maxPriceValue,
                 maxMileage: "",
                 fuel: "All",
                 gearbox: "All",
@@ -999,6 +1003,7 @@ async function init() {
             populateSelect(elements.pricePerMilBucket, appData.lookups?.pricePerMilBuckets ?? []);
             populateSelect(elements.debtStatus, appData.lookups?.debtStatuses ?? []);
             populateSelect(elements.registryVerified, appData.lookups?.registryVerifiedOptions ?? []);
+            elements.maxPrice.value = appData.meta?.maxPrice ? String(appData.meta.maxPrice) : "";
             populateSelect(elements.sort1, appData.filters.sortOptions, "none", false);
             populateSelect(elements.sort2, appData.filters.sortOptions, "none", false);
             populateSelect(elements.sort3, appData.filters.sortOptions, "none", false);

@@ -961,6 +961,8 @@ const out = {
   meta: {
     generatedAt: new Date().toISOString(),
     count: processed.length,
+    maxPrice,
+    maxMileage,
   },
   lookups: {
     brands,
