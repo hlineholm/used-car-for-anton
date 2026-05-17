@@ -162,29 +162,22 @@
       margin: 0;
       font-size: 1rem;
     }
-    .tool-card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
     .view-toggle {
       display: inline-flex;
       gap: 8px;
-      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
     }
-    .view-toggle button {
+    .actions .view-toggle button {
       width: auto;
       min-width: 0;
-      padding: 6px 8px;
+      padding: 10px 12px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.88rem;
-      line-height: 1;
-      border-radius: 999px;
+      font-size: 0.9rem;
     }
-    .view-toggle button.active {
+    .actions .view-toggle button.active {
       border-color: var(--link);
       color: var(--link);
       font-weight: 700;
@@ -377,21 +370,6 @@
           <h3>Quick shortcuts</h3>
           <div id="shortcut-root"></div>
         </section>
-        <section class="tool-card">
-          <div class="tool-card-head">
-            <h3>View mode</h3>
-            <div class="view-toggle">
-              <button id="view-cards" type="button" class="active" aria-label="Card view" title="Card view">
-                <span aria-hidden="true">▦</span>
-                <span>Card</span>
-              </button>
-              <button id="view-list" type="button" aria-label="List view" title="List view">
-                <span aria-hidden="true">☰</span>
-                <span>List</span>
-              </button>
-            </div>
-          </div>
-        </section>
       </div>
       <div class="filters">
         <div>
@@ -437,6 +415,16 @@
       </div>
       <div class="actions">
         <button id="reset-filters" type="button">Reset filters</button>
+        <div class="view-toggle" aria-label="View mode">
+          <button id="view-cards" type="button" class="active" aria-label="Card view" title="Card view">
+            <span aria-hidden="true">▦</span>
+            <span>Card</span>
+          </button>
+          <button id="view-list" type="button" aria-label="List view" title="List view">
+            <span aria-hidden="true">☰</span>
+            <span>List</span>
+          </button>
+        </div>
         <span class="muted" id="results-summary"></span>
       </div>
       <div class="car-grid" id="inventory-body"></div>
