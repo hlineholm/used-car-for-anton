@@ -21,7 +21,7 @@ export function parseOptionalNumber(value) {
 export function parseBrandModel(modelValue) {
     const clean = String(modelValue ?? "").trim();
     if (!clean)
-        return { brand: "Unknown", modelName: "Unknown" };
+        return { brand: "Okänd", modelName: "Okänd" };
     const [brand, ...rest] = clean.split(/\s+/);
     return {
         brand,

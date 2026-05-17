@@ -94,7 +94,7 @@ let allModelOptions: string[] = [];
 function must<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) {
-    throw new Error(`Missing required element: #${id}`);
+    throw new Error(`Saknar element: #${id}`);
   }
   return element as T;
 }
@@ -148,6 +148,23 @@ function badgeClass(risk: string): string {
   return `badge badge-${String(risk || "unrated").toLowerCase()}`;
 }
 
+function riskLabel(risk: string): string {
+  switch (risk) {
+    case "Lower":
+      return "Låg";
+    case "Medium":
+      return "Mellan";
+    case "Higher":
+      return "Hög";
+    case "Avoid":
+      return "Undvik";
+    case "Unrated":
+      return "Ej bedömd";
+    default:
+      return risk;
+  }
+}
+
 function populateSelect(
   select: HTMLSelectElement,
   values: Array<string | SortOption>,
@@ -156,11 +173,12 @@ function populateSelect(
 ): void {
   const options: string[] = [];
   if (includeAll) {
-    options.push('<option value="All">All</option>');
+    options.push('<option value="All">Alla</option>');
   }
   for (const value of values) {
     if (typeof value === "string") {
-      options.push(`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`);
+      const label = select.id === "risk" ? riskLabel(value) : value;
+      options.push(`<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`);
     } else {
       options.push(`<option value="${escapeHtml(value.value)}">${escapeHtml(value.label)}</option>`);
     }
@@ -196,7 +214,7 @@ function buildStructuredFilterCatalog(): { brandOptions: string[]; locationOptio
   const collator = new Intl.Collator("sv", { sensitivity: "base" });
   const brandOptions = [...brands].sort((a, b) => collator.compare(a, b));
   const locationOptions = [...locations].sort((a, b) => collator.compare(a, b));
-  allModelOptions = [...new Set(appData.inventory.map((item) => item.modelName ?? "Unknown"))].sort((a, b) =>
+  allModelOptions = [...new Set(appData.inventory.map((item) => item.modelName ?? "Okänd"))].sort((a, b) =>
     collator.compare(a, b),
   );
 
@@ -266,7 +284,7 @@ function renderShortcuts(): void {
     {
       id: "prius",
       title: "Prius",
-      note: "Best reliability-first bet.",
+      note: "Bra förstaval.",
       values: {
         brand: "Toyota",
         model: "Prius",
@@ -287,7 +305,7 @@ function renderShortcuts(): void {
     {
       id: "jazz",
       title: "Jazz",
-      note: "Good CVT family pick.",
+      note: "Bra familjeval.",
       values: {
         brand: "Honda",
         model: "Jazz",
@@ -308,7 +326,7 @@ function renderShortcuts(): void {
     {
       id: "city",
       title: "Aygo / 107 / C1",
-      note: "Small city-car cluster.",
+      note: "Små stadsbilar.",
       values: {
         brand: "All",
         model: "All",
@@ -328,8 +346,8 @@ function renderShortcuts(): void {
     },
     {
       id: "avoid",
-      title: "Avoid list",
-      note: "Yaris/Auris/207/Polo warnings.",
+      title: "Undvik",
+      note: "Yaris/Auris/207/Polo.",
       values: {
         brand: "All",
         model: "All",
@@ -349,8 +367,8 @@ function renderShortcuts(): void {
     },
     {
       id: "lowmiles",
-      title: "Low mileage",
-      note: "Pull the easiest-looking cars first.",
+      title: "Låg mil",
+      note: "Visa lägst mil först.",
       values: {
         brand: "All",
         model: "All",
@@ -370,8 +388,8 @@ function renderShortcuts(): void {
     },
     {
       id: "clear",
-      title: "Reset",
-      note: "Back to full inventory.",
+      title: "Nollställ",
+      note: "Tillbaka till alla.",
       values: {
         brand: "All",
         model: "All",
@@ -415,22 +433,22 @@ function getSortValues(): string[] {
 
 function describeActiveState(sortValues: string[], tokenGroups: string[][], maxPrice: number | null, maxMileage: number | null): string {
   const parts: string[] = [];
-  if (elements.brand.value !== "All") parts.push(`brand: ${elements.brand.value}`);
-  if (elements.model.value !== "All") parts.push(`model: ${elements.model.value}`);
-  if (elements.location.value !== "All") parts.push(`location: ${elements.location.value}`);
-  if (tokenGroups.length) parts.push(`search: ${elements.search.value.trim()}`);
-  if (maxPrice !== null && maxPrice !== DEFAULT_MAX_PRICE) parts.push(`max price: ${Math.round(maxPrice)}`);
-  if (maxMileage !== null) parts.push(`max mileage: ${Math.round(maxMileage)}`);
-  if (elements.fuel.value !== "All") parts.push(`fuel: ${elements.fuel.value}`);
-  if (elements.seller.value !== "All") parts.push(`seller: ${elements.seller.value}`);
-  if (elements.body.value !== "All") parts.push(`body: ${elements.body.value}`);
-  if (elements.risk.value !== "All") parts.push(`risk: ${elements.risk.value}`);
-  if (elements.unrated.value === "include") parts.push("including unrated");
+  if (elements.brand.value !== "All") parts.push(`märke: ${elements.brand.value}`);
+  if (elements.model.value !== "All") parts.push(`modell: ${elements.model.value}`);
+  if (elements.location.value !== "All") parts.push(`ort: ${elements.location.value}`);
+  if (tokenGroups.length) parts.push(`sök: ${elements.search.value.trim()}`);
+  if (maxPrice !== null && maxPrice !== DEFAULT_MAX_PRICE) parts.push(`maxpris: ${Math.round(maxPrice)}`);
+  if (maxMileage !== null) parts.push(`max mil: ${Math.round(maxMileage)}`);
+  if (elements.fuel.value !== "All") parts.push(`drivmedel: ${elements.fuel.value}`);
+  if (elements.seller.value !== "All") parts.push(`säljare: ${elements.seller.value}`);
+  if (elements.body.value !== "All") parts.push(`kaross: ${elements.body.value}`);
+  if (elements.risk.value !== "All") parts.push(`risk: ${riskLabel(elements.risk.value)}`);
+  if (elements.unrated.value === "include") parts.push("visar ej bedömda");
   if (sortValues.length) {
     const sortText = sortValues.map((value) => sortLabelByValue[value] ?? value).join(" > ");
-    parts.push(`sort: ${sortText}`);
+    parts.push(`sortering: ${sortText}`);
   }
-  return parts.length ? `Active: ${parts.join(" • ")}` : "Active: default";
+  return parts.length ? `Aktivt: ${parts.join(" • ")}` : "Aktivt: standard";
 }
 
 function renderInventoryRows(rows: InventoryItem[]): void {
@@ -445,24 +463,20 @@ function renderInventoryRows(rows: InventoryItem[]): void {
                 <h3>${escapeHtml(item.model)}</h3>
                 <div class="muted">${escapeHtml(item.trim)}</div>
               </div>
-              <span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span>
+              <span class="${badgeClass(item.risk)}">${escapeHtml(riskLabel(item.risk))}</span>
             </div>
             <div class="car-meta">
-              <div><span class="label">Year</span>${escapeHtml(item.year)}</div>
-              <div><span class="label">Mileage</span>${escapeHtml(item.mileage)}</div>
-              <div><span class="label">Price</span>${escapeHtml(item.price)}</div>
-              <div><span class="label">Fuel</span>${escapeHtml(item.fuel)}</div>
-              <div><span class="label">Location</span>${escapeHtml(item.location)}</div>
-              <div><span class="label">Seller</span>${escapeHtml(item.seller)}</div>
-              <div><span class="label">Body</span>${escapeHtml(item.body)}</div>
-              <div><span class="label">Owners</span>${escapeHtml(item.owners)}</div>
+              <div><span class="label">År</span>${escapeHtml(item.year)}</div>
+              <div><span class="label">Miltal</span>${escapeHtml(item.mileage)}</div>
+              <div><span class="label">Pris</span>${escapeHtml(item.price)}</div>
+              <div><span class="label">Drivmedel</span>${escapeHtml(item.fuel)}</div>
+              <div><span class="label">Ort</span>${escapeHtml(item.location)}</div>
+              <div><span class="label">Säljare</span>${escapeHtml(item.seller)}</div>
+              <div><span class="label">Kaross</span>${escapeHtml(item.body)}</div>
+              <div><span class="label">Ägare</span>${escapeHtml(item.owners)}</div>
               <div><span class="label">Reg</span>${escapeHtml(item.reg)}</div>
-              <div><span class="label">Link</span><a href="${escapeHtml(item.href)}">Blocket</a></div>
+              <div><span class="label">Länk</span><a href="${escapeHtml(item.href)}">Blocket</a></div>
             </div>
-            <div><span class="label">Service due soon</span>${escapeHtml(item.serviceDue)}</div>
-            <div><span class="label">Likely cost</span>${escapeHtml(item.serviceCost)}</div>
-            <div><span class="label">Forum watchouts</span><p class="car-note">${escapeHtml(item.forumWatchouts)}</p></div>
-            <div><span class="label">Why flagged this way</span><p class="car-note">${escapeHtml(item.riskNote)}</p></div>
           </article>
         `,
       )
@@ -475,22 +489,19 @@ function renderInventoryRows(rows: InventoryItem[]): void {
     <table>
       <thead>
         <tr>
-          <th>Model</th>
-          <th>Trim</th>
+          <th>Modell</th>
+          <th>Version</th>
           <th>Risk</th>
-          <th>Year</th>
-          <th>Mileage</th>
-          <th>Price</th>
-          <th>Fuel</th>
-          <th>Location</th>
-          <th>Seller</th>
-          <th>Body</th>
-          <th>Owners</th>
+          <th>År</th>
+          <th>Miltal</th>
+          <th>Pris</th>
+          <th>Drivmedel</th>
+          <th>Ort</th>
+          <th>Säljare</th>
+          <th>Kaross</th>
+          <th>Ägare</th>
           <th>Reg</th>
-          <th>Service due soon</th>
-          <th>Likely cost</th>
-          <th>Forum watchouts</th>
-          <th>Link</th>
+          <th>Länk</th>
         </tr>
       </thead>
       <tbody>
@@ -500,7 +511,7 @@ function renderInventoryRows(rows: InventoryItem[]): void {
           <tr>
             <td>${escapeHtml(item.model)}</td>
             <td>${escapeHtml(item.trim)}</td>
-            <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
+            <td><span class="${badgeClass(item.risk)}">${escapeHtml(riskLabel(item.risk))}</span></td>
             <td>${escapeHtml(item.year)}</td>
             <td>${escapeHtml(item.mileage)}</td>
             <td>${escapeHtml(item.price)}</td>
@@ -510,9 +521,6 @@ function renderInventoryRows(rows: InventoryItem[]): void {
             <td>${escapeHtml(item.body)}</td>
             <td>${escapeHtml(item.owners)}</td>
             <td>${escapeHtml(item.reg)}</td>
-            <td>${escapeHtml(item.serviceDue)}</td>
-            <td>${escapeHtml(item.serviceCost)}</td>
-            <td>${escapeHtml(item.forumWatchouts)}</td>
             <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
           </tr>
         `,
@@ -545,7 +553,7 @@ function renderInventory(): void {
     .sort((a, b) => compareItems(a, b, sortValues));
 
   renderInventoryRows(filtered);
-  elements.resultsSummary.textContent = `${filtered.length} of ${visibleInventory.length} cars shown`;
+  elements.resultsSummary.textContent = `Visar ${filtered.length} av ${visibleInventory.length} bilar`;
   elements.filterState.textContent = describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage);
   elements.viewCards.classList.toggle("active", inventoryView === "cards");
   elements.viewList.classList.toggle("active", inventoryView === "list");
@@ -644,7 +652,7 @@ async function init(): Promise<void> {
     elements.status.textContent = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    elements.status.textContent = `Could not load the page data: ${message}`;
+    elements.status.textContent = `Kunde inte läsa data: ${message}`;
   }
 }
 

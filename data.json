@@ -1,51 +1,51 @@
 {
   "copy": {
-    "inventoryTitle": "Filterable Blocket inventory for automatic passenger cars under 50,000 SEK within 200 km of Uppsala",
-    "inventoryIntroHtml": "Search date: 2026-05-17. Source: Blocket only. This is the widened run that approximates Stockholm, Uppsala, Gavle, Vasteras, and the surrounding ~3-hour driving area.",
-    "shortlistTitle": "Curated shortlist for automatic commuter cars within 200 km of Uppsala",
-    "shortlistIntroHtml": "Built from the widened Blocket run dated 2026-05-17. The full searchable inventory is below on this same page.",
-    "serviceDisclaimer": "Service-due and forum-watchout notes are mileage-based heuristics from known model-family weak points, not proof that the seller already handled the work.",
-    "inventoryBottomLineHeading": "Bottom line first",
-    "inventoryBottomLineHtml": "If the goal is <strong>cheap automatic transport with the lowest risk of an ugly gearbox surprise</strong>, I would start with the <strong>Prius</strong> entries first and the <strong>Honda Jazz</strong> entries second. The small Aygo / 107 / C1 cars are still in the pool, but the robotized gearbox is their catch. I would actively de-rank <strong>Yaris/Auris MultiMode</strong>, <strong>Peugeot 207 automatic</strong>, and older <strong>Polo automatics</strong>.",
-    "shortlistBottomLineHeading": "Bottom line",
-    "shortlistBottomLineHtml": "<strong>Prius first, Jazz second, low-mileage Accent as a wildcard.</strong> The small Aygo / 107 / C1 cars can still make sense, but only if the robotized gearbox is clearly healthy. I would actively de-rank Yaris / Auris MultiMode, Peugeot 207 automatic, and older Polo automatics.",
-    "inventoryFilterIntro": "Use the dropdown filters first (brand, model, location, fuel, seller, body, risk), then refine with optional text search. Search matches all words by default, and you can use | for OR (example: Prius | Jazz). Cars marked Unrated are hidden by default unless you switch Unrated cars to include."
+    "inventoryTitle": "Bilkoll",
+    "inventoryIntroHtml": "Blocket, sökdatum 2026-05-17.",
+    "shortlistTitle": "Bilkoll",
+    "shortlistIntroHtml": "Urval från samma körning.",
+    "serviceDisclaimer": "Service- och forumtext är uppskattningar, inte bekräftad servicehistorik.",
+    "inventoryBottomLineHeading": "Kort läge",
+    "inventoryBottomLineHtml": "Börja med <strong>Prius</strong>, sedan <strong>Jazz</strong>. Var försiktig med <strong>Yaris/Auris MultiMode</strong>, <strong>Peugeot 207 automat</strong> och äldre <strong>Polo automat</strong>.",
+    "shortlistBottomLineHeading": "Kort läge",
+    "shortlistBottomLineHtml": "<strong>Prius först, Jazz sen.</strong> Småbilarna Aygo/107/C1 kan fungera om växellådan känns frisk.",
+    "inventoryFilterIntro": "Filtrera med menyerna. Textsök är valfritt."
   },
   "summary": {
     "inventoryCards": [
       {
         "value": "1221",
-        "label": "final matching cars"
+        "label": "matchande bilar"
       },
       {
         "value": "274",
-        "label": "excluded false positives / non-matches"
+        "label": "borttagna träffar"
       },
       {
         "value": "31",
-        "label": "paginated search pages fetched"
+        "label": "hämtade sidor"
       },
       {
         "value": "1526",
-        "label": "raw candidate IDs collected"
+        "label": "insamlade id"
       }
     ],
     "shortlistCards": [
       {
         "value": "1221",
-        "label": "matching cars in the full cleaned inventory"
+        "label": "matchande bilar i listan"
       },
       {
         "value": "17",
-        "label": "Toyota Prius entries"
+        "label": "Toyota Prius"
       },
       {
         "value": "2",
-        "label": "Honda Jazz entries"
+        "label": "Honda Jazz"
       },
       {
         "value": "14",
-        "label": "Aygo / 107 / C1 city-car entries"
+        "label": "Aygo / 107 / C1"
       }
     ],
     "modelSpotCheck": [
@@ -219,10 +219,10 @@
       }
     ],
     "rules": [
-      "Prius and Jazz are ranked highest on model-level reliability.",
-      "Aygo / 107 / C1 stay available, but are flagged for robotized gearbox risk.",
-      "Yaris / Auris MultiMode are not treated as safe just because they are Toyotas.",
-      "Peugeot 207 automatic and older Polo automatics are de-ranked."
+      "Prius och Jazz prioriteras.",
+      "Aygo / 107 / C1 finns kvar men kräver extra koll av växellådan.",
+      "Yaris / Auris MultiMode prioriteras ner.",
+      "Peugeot 207 automat och äldre Polo automat prioriteras ner."
     ]
   },
   "filters": {
@@ -262,119 +262,119 @@
     "sortOptions": [
       {
         "value": "price-asc",
-        "label": "Price low to high"
+        "label": "Pris lågt till högt"
       },
       {
         "value": "price-desc",
-        "label": "Price high to low"
+        "label": "Pris högt till lågt"
       },
       {
         "value": "mileage-asc",
-        "label": "Mileage low to high"
+        "label": "Miltal lågt till högt"
       },
       {
         "value": "mileage-desc",
-        "label": "Mileage high to low"
+        "label": "Miltal högt till lågt"
       },
       {
         "value": "year-desc",
-        "label": "Year newest first"
+        "label": "År nyast först"
       },
       {
         "value": "year-asc",
-        "label": "Year oldest first"
+        "label": "År äldst först"
       },
       {
         "value": "owners-asc",
-        "label": "Owners low to high"
+        "label": "Ägare få till många"
       },
       {
         "value": "owners-desc",
-        "label": "Owners high to low"
+        "label": "Ägare många till få"
       },
       {
         "value": "model-asc",
-        "label": "Model A to Z"
+        "label": "Modell A till Ö"
       },
       {
         "value": "model-desc",
-        "label": "Model Z to A"
+        "label": "Modell Ö till A"
       },
       {
         "value": "trim-asc",
-        "label": "Trim A to Z"
+        "label": "Version A till Ö"
       },
       {
         "value": "trim-desc",
-        "label": "Trim Z to A"
+        "label": "Version Ö till A"
       },
       {
         "value": "location-asc",
-        "label": "Location A to Z"
+        "label": "Ort A till Ö"
       },
       {
         "value": "location-desc",
-        "label": "Location Z to A"
+        "label": "Ort Ö till A"
       },
       {
         "value": "fuel-asc",
-        "label": "Fuel A to Z"
+        "label": "Drivmedel A till Ö"
       },
       {
         "value": "fuel-desc",
-        "label": "Fuel Z to A"
+        "label": "Drivmedel Ö till A"
       },
       {
         "value": "seller-asc",
-        "label": "Seller A to Z"
+        "label": "Säljare A till Ö"
       },
       {
         "value": "seller-desc",
-        "label": "Seller Z to A"
+        "label": "Säljare Ö till A"
       },
       {
         "value": "body-asc",
-        "label": "Body A to Z"
+        "label": "Kaross A till Ö"
       },
       {
         "value": "body-desc",
-        "label": "Body Z to A"
+        "label": "Kaross Ö till A"
       },
       {
         "value": "risk-asc",
-        "label": "Risk low to high"
+        "label": "Risk låg till hög"
       },
       {
         "value": "risk-desc",
-        "label": "Risk high to low"
+        "label": "Risk hög till låg"
       },
       {
         "value": "service-due-asc",
-        "label": "Service due A to Z"
+        "label": "Service snart A till Ö"
       },
       {
         "value": "service-due-desc",
-        "label": "Service due Z to A"
+        "label": "Service snart Ö till A"
       },
       {
         "value": "service-cost-asc",
-        "label": "Service cost low to high"
+        "label": "Servicekostnad låg till hög"
       },
       {
         "value": "service-cost-desc",
-        "label": "Service cost high to low"
+        "label": "Servicekostnad hög till låg"
       },
       {
         "value": "reg-asc",
-        "label": "Registration A to Z"
+        "label": "Regnr A till Ö"
       },
       {
         "value": "reg-desc",
-        "label": "Registration Z to A"
+        "label": "Regnr Ö till A"
       },
       {
         "value": "none",
-        "label": "None"
+        "label": "Ingen"
       }
     ]
   },

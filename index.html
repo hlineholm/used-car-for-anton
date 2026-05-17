@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Filterable Blocket inventory for automatic passenger cars under 50,000 SEK within 200 km of Uppsala</title>
+  <title>Bilkoll</title>
   <link rel="icon" href="data:,">
   <style>
     :root {
@@ -347,7 +347,7 @@
 </head>
 <body class="page-inventory">
   <main>
-    <h1 id="page-heading">Loading...</h1>
+    <h1 id="page-heading">Laddar...</h1>
     <p class="muted" id="page-intro"></p>
     <p class="muted" id="service-disclaimer"></p>
 
@@ -357,106 +357,106 @@
       <div class="summary-grid" id="summary-cards"></div>
       <div class="two-col inventory-only">
         <div>
-          <h3>Model spot-check</h3>
+          <h3>Modeller</h3>
           <ul class="compact" id="model-spot-check"></ul>
         </div>
         <div>
-          <h3>Most common models in the cleaned inventory</h3>
+          <h3>Vanligast</h3>
           <ul class="compact" id="top-models"></ul>
         </div>
       </div>
       <div class="two-col inventory-only">
         <div>
-          <h3>Heaviest listing areas</h3>
+          <h3>Områden</h3>
           <ul class="compact" id="top-locations"></ul>
         </div>
         <div>
-          <h3>Decision rules used in the shortlist</h3>
+          <h3>Regler</h3>
           <ul class="compact" id="decision-rules"></ul>
         </div>
       </div>
     </section>
 
     <section class="panel inventory-only" id="full-inventory">
-      <h2>Filter the full inventory</h2>
+      <h2>Alla bilar</h2>
       <p class="muted" id="inventory-filter-intro"></p>
       <div class="inventory-toolbar">
         <section class="tool-card">
-          <h3>Quick shortcuts</h3>
+          <h3>Snabbval</h3>
           <div id="shortcut-root"></div>
         </section>
       </div>
       <div class="filters">
         <div>
-          <label for="brand">Brand</label>
+          <label for="brand">Märke</label>
           <select id="brand"></select>
         </div>
         <div>
-          <label for="model">Model</label>
+          <label for="model">Modell</label>
           <select id="model"></select>
         </div>
         <div>
-          <label for="location">Location</label>
+          <label for="location">Ort</label>
           <select id="location"></select>
         </div>
         <div>
-          <label for="search">Text search (optional)</label>
-          <input id="search" type="text" placeholder="Trim, reg, notes... (supports OR with |)">
+          <label for="search">Textsök (valfri)</label>
+          <input id="search" type="text" placeholder="Regnr eller fritext">
         </div>
         <div>
-          <label for="max-price">Max price (SEK)</label>
+          <label for="max-price">Maxpris (kr)</label>
           <input id="max-price" type="number" min="0" step="1000" value="50000">
         </div>
         <div>
-          <label for="max-mileage">Max mileage (mil)</label>
-          <input id="max-mileage" type="number" min="0" step="1000" placeholder="Leave blank for any">
+          <label for="max-mileage">Max miltal (mil)</label>
+          <input id="max-mileage" type="number" min="0" step="1000" placeholder="Tomt = alla">
         </div>
         <div>
-          <label for="fuel">Fuel</label>
+          <label for="fuel">Drivmedel</label>
           <select id="fuel"></select>
         </div>
         <div>
-          <label for="seller">Seller type</label>
+          <label for="seller">Säljare</label>
           <select id="seller"></select>
         </div>
         <div>
-          <label for="body">Body type</label>
+          <label for="body">Kaross</label>
           <select id="body"></select>
         </div>
         <div>
-          <label for="risk">Risk bucket</label>
+          <label for="risk">Risk</label>
           <select id="risk"></select>
         </div>
         <div>
-          <label for="sort-1">Sort 1 (primary)</label>
+          <label for="sort-1">Sortering 1</label>
           <select id="sort-1"></select>
         </div>
         <div>
-          <label for="sort-2">Sort 2 (secondary)</label>
+          <label for="sort-2">Sortering 2</label>
           <select id="sort-2"></select>
         </div>
         <div>
-          <label for="sort-3">Sort 3 (tertiary)</label>
+          <label for="sort-3">Sortering 3</label>
           <select id="sort-3"></select>
         </div>
         <div>
-          <label for="unrated">Unrated cars</label>
+          <label for="unrated">Ej bedömda</label>
           <select id="unrated">
-            <option value="exclude" selected>Hide unrated</option>
-            <option value="include">Include unrated</option>
+            <option value="exclude" selected>Dölj</option>
+            <option value="include">Visa</option>
           </select>
         </div>
       </div>
       <div class="actions">
-        <button id="reset-filters" type="button">Reset filters</button>
-        <div class="view-toggle" aria-label="View mode">
-          <button id="view-cards" type="button" aria-label="Card view" title="Card view">
+        <button id="reset-filters" type="button">Nollställ</button>
+        <div class="view-toggle" aria-label="Vy">
+          <button id="view-cards" type="button" aria-label="Kortvy" title="Kortvy">
             <span aria-hidden="true">▦</span>
-            <span>Card</span>
+            <span>Kort</span>
           </button>
-          <button id="view-list" type="button" class="active" aria-label="List view" title="List view">
+          <button id="view-list" type="button" class="active" aria-label="Listvy" title="Listvy">
             <span aria-hidden="true">☰</span>
-            <span>List</span>
+            <span>Lista</span>
           </button>
         </div>
         <span class="muted" id="results-summary"></span>
@@ -465,8 +465,8 @@
       <div class="car-grid" id="inventory-body"></div>
     </section>
 
-    <p class="status muted" id="page-status">Loading page data...</p>
-    <noscript><p class="status">This page needs JavaScript because it loads its data from a JSON file.</p></noscript>
+    <p class="status muted" id="page-status">Laddar data...</p>
+    <noscript><p class="status">Sidan kräver JavaScript.</p></noscript>
   </main>
 
   <script type="module" src="app.js"></script>
