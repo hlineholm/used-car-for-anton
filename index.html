@@ -48,6 +48,8 @@
       max-width: 2200px;
       margin: 0 auto;
       padding: 32px clamp(18px, 2vw, 40px) 64px;
+      display: flex;
+      flex-direction: column;
     }
     h1, h2, h3 { line-height: 1.2; }
     h1 { margin: 0 0 8px; }
@@ -335,6 +337,12 @@
     .page-shortlist .inventory-only {
       display: none;
     }
+    #full-inventory {
+      order: 1;
+    }
+    #overview-panel {
+      order: 2;
+    }
   </style>
 </head>
 <body class="page-inventory">
@@ -343,7 +351,7 @@
     <p class="muted" id="page-intro"></p>
     <p class="muted" id="service-disclaimer"></p>
 
-    <section class="panel">
+    <section class="panel" id="overview-panel">
       <h2 id="bottom-line-heading"></h2>
       <p id="bottom-line-text"></p>
       <div class="summary-grid" id="summary-cards"></div>
@@ -461,7 +469,8 @@
     <noscript><p class="status">This page needs JavaScript because it loads its data from a JSON file.</p></noscript>
   </main>
 
-  <script>
+  <script type="module" src="app.js"></script>
+  <script type="application/json" id="legacy-inline-script-disabled">
     const DATA_URL = "data.json";
     const DEFAULT_MAX_PRICE = 50000;
     const pageMode = "inventory";

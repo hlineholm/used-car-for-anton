@@ -9,6 +9,10 @@ Minimal static site for browsing automatic commuter cars around Uppsala.
 | `README.md` | Repo overview. |
 | `index.html` | The page. Shows summary cards, shortcut cards, then the full filterable inventory. |
 | `data.json` | Generated page data. |
+| `src/app.ts` | TypeScript browser app (UI wiring and rendering). |
+| `src/core.ts` | TypeScript core filter/sort logic. |
+| `tests/core.test.ts` | Unit tests for filter/sort behavior. |
+| `app.js`, `core.js` | Built JavaScript loaded by the static page. |
 | `scripts/serve.py` | Local HTTP preview helper. |
 
 ## Run locally
@@ -21,6 +25,14 @@ Open:
 
 ```text
 http://127.0.0.1:8123/
+```
+
+## Build and test
+
+```bash
+npm install
+npm run build
+npm test
 ```
 
 ## GitHub Pages

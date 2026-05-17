@@ -1,0 +1,15 @@
+{
+  "name": "used-car-for-anton",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.app.json && cp dist/app.js app.js && cp dist/core.js core.js",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test build-tests/tests/**/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.24",
+    "typescript": "^5.8.3"
+  }
+}
