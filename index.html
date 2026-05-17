@@ -703,7 +703,6 @@
     }
 
     function renderInventoryRows(rows) {
-      elements.resultsSummary.textContent = `${rows.length} of ${appData.inventory.length} cars shown`;
       elements.inventoryBody.className = inventoryView === "cards" ? "car-grid" : "car-list";
       elements.inventoryBody.innerHTML = rows.map((item) => `
         <article class="car-card">
@@ -740,7 +739,8 @@
       const maxMileage = elements.maxMileage.value ? Number(elements.maxMileage.value) : null;
       const sortValues = [elements.sort1.value, elements.sort2.value, elements.sort3.value].filter((value) => value && value !== "none");
 
-      const filtered = appData.inventory
+      const visibleInventory = appData.inventory.filter((item) => elements.risk.value !== "All" || item.risk !== "Unrated");
+      const filtered = visibleInventory
         .filter((item) => !query || matchesSearch(item, query))
         .filter((item) => !maxPrice || item.priceNum <= maxPrice)
         .filter((item) => maxMileage === null || item.mileageMil <= maxMileage)
@@ -751,6 +751,7 @@
         .sort((a, b) => compareItems(a, b, sortValues));
 
       renderInventoryRows(filtered);
+      elements.resultsSummary.textContent = `${filtered.length} of ${visibleInventory.length} cars shown`;
       elements.viewCards.classList.toggle("active", inventoryView === "cards");
       elements.viewList.classList.toggle("active", inventoryView === "list");
     }
