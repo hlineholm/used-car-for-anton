@@ -116,6 +116,7 @@
       gap: 12px;
       margin-top: 14px;
       flex-wrap: wrap;
+      align-items: center;
     }
     .badge {
       display: inline-block;
@@ -223,12 +224,6 @@
     .car-note {
       margin: 0;
     }
-    .car-list {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 14px;
-    }
     .mini-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -275,6 +270,7 @@
       min-width: 100%;
       border-collapse: collapse;
       table-layout: auto;
+      font-size: 0.92rem;
     }
     th, td {
       border: 1px solid var(--border);
@@ -284,6 +280,17 @@
       white-space: normal;
     }
     th { background: var(--header); }
+    #inventory-body.table-wrap thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    #inventory-body.table-wrap tbody tr:nth-child(even) {
+      background: var(--panel);
+    }
+    #inventory-body.table-wrap tbody tr:hover {
+      background: var(--header);
+    }
     .inventory-only table th:nth-child(1),
     .inventory-only table td:nth-child(1) {
       min-width: 240px;
@@ -401,31 +408,39 @@
           <select id="risk"></select>
         </div>
         <div>
-          <label for="sort-1">Sort 1</label>
+          <label for="sort-1">Sort 1 (primary)</label>
           <select id="sort-1"></select>
         </div>
         <div>
-          <label for="sort-2">Sort 2</label>
+          <label for="sort-2">Sort 2 (secondary)</label>
           <select id="sort-2"></select>
         </div>
         <div>
-          <label for="sort-3">Sort 3</label>
+          <label for="sort-3">Sort 3 (tertiary)</label>
           <select id="sort-3"></select>
+        </div>
+        <div>
+          <label for="unrated">Unrated cars</label>
+          <select id="unrated">
+            <option value="exclude" selected>Hide unrated</option>
+            <option value="include">Include unrated</option>
+          </select>
         </div>
       </div>
       <div class="actions">
         <button id="reset-filters" type="button">Reset filters</button>
         <div class="view-toggle" aria-label="View mode">
-          <button id="view-cards" type="button" class="active" aria-label="Card view" title="Card view">
+          <button id="view-cards" type="button" aria-label="Card view" title="Card view">
             <span aria-hidden="true">▦</span>
             <span>Card</span>
           </button>
-          <button id="view-list" type="button" aria-label="List view" title="List view">
+          <button id="view-list" type="button" class="active" aria-label="List view" title="List view">
             <span aria-hidden="true">☰</span>
             <span>List</span>
           </button>
         </div>
         <span class="muted" id="results-summary"></span>
+        <span class="muted" id="filter-state"></span>
       </div>
       <div class="car-grid" id="inventory-body"></div>
     </section>
@@ -436,6 +451,7 @@
 
   <script>
     const DATA_URL = "data.json";
+    const DEFAULT_MAX_PRICE = 50000;
     const pageMode = "inventory";
     let appData = null;
     let inventoryControlsBound = false;
@@ -451,8 +467,6 @@
       topModels: document.getElementById("top-models"),
       topLocations: document.getElementById("top-locations"),
       decisionRules: document.getElementById("decision-rules"),
-      priusRoot: document.getElementById("prius-root"),
-      shortlistsRoot: document.getElementById("shortlists-root"),
       filterIntro: document.getElementById("inventory-filter-intro"),
       shortcutRoot: document.getElementById("shortcut-root"),
       viewCards: document.getElementById("view-cards"),
@@ -465,14 +479,17 @@
       seller: document.getElementById("seller"),
       body: document.getElementById("body"),
       risk: document.getElementById("risk"),
+      unrated: document.getElementById("unrated"),
       sort1: document.getElementById("sort-1"),
       sort2: document.getElementById("sort-2"),
       sort3: document.getElementById("sort-3"),
       reset: document.getElementById("reset-filters"),
       resultsSummary: document.getElementById("results-summary"),
+      filterState: document.getElementById("filter-state"),
       inventoryBody: document.getElementById("inventory-body"),
     };
-    let inventoryView = "cards";
+    let inventoryView = "list";
+    let sortLabelByValue = {};
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -565,6 +582,7 @@
       if (values.seller !== undefined) elements.seller.value = values.seller;
       if (values.body !== undefined) elements.body.value = values.body;
       if (values.risk !== undefined) elements.risk.value = values.risk;
+      if (values.unrated !== undefined) elements.unrated.value = values.unrated;
       if (values.sort1 !== undefined) elements.sort1.value = values.sort1;
       if (values.sort2 !== undefined) elements.sort2.value = values.sort2;
       if (values.sort3 !== undefined) elements.sort3.value = values.sort3;
@@ -575,10 +593,10 @@
       const shortcuts = [
         { id: "prius", title: "Prius", note: "Best reliability-first bet.", values: { search: "Prius", sort1: "price-asc" } },
         { id: "jazz", title: "Jazz", note: "Good CVT family pick.", values: { search: "Jazz", sort1: "price-asc" } },
-        { id: "city", title: "Aygo / 107 / C1", note: "Small city-car cluster.", values: { search: "Aygo 107 C1", sort1: "price-asc" } },
-        { id: "avoid", title: "Avoid list", note: "Yaris/Auris/207/Polo warnings.", values: { search: "Yaris Auris 207 Polo", risk: "Avoid", sort1: "price-asc" } },
+        { id: "city", title: "Aygo / 107 / C1", note: "Small city-car cluster.", values: { search: "Aygo | 107 | C1", sort1: "price-asc" } },
+        { id: "avoid", title: "Avoid list", note: "Yaris/Auris/207/Polo warnings.", values: { search: "Yaris | Auris | 207 | Polo", risk: "Avoid", sort1: "price-asc" } },
         { id: "lowmiles", title: "Low mileage", note: "Pull the easiest-looking cars first.", values: { maxMileage: 15000, sort1: "mileage-asc" } },
-        { id: "clear", title: "Reset", note: "Back to full inventory.", values: { search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", sort1: "price-asc", sort2: "none", sort3: "none" } },
+        { id: "clear", title: "Reset", note: "Back to full inventory.", values: { search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", unrated: "exclude", sort1: "none", sort2: "none", sort3: "none" } },
       ];
       elements.shortcutRoot.innerHTML = `<div class="shortcut-grid">${shortcuts
         .map(
@@ -596,8 +614,23 @@
       });
     }
 
-    function matchesSearch(item, query) {
-      if (!query) return true;
+    function normalizeText(value) {
+      return String(value ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function parseSearchQuery(query) {
+      return normalizeText(query)
+        .split("|")
+        .map((group) => group.trim())
+        .filter(Boolean)
+        .map((group) => group.split(/\s+/).filter(Boolean));
+    }
+
+    function matchesSearch(item, tokenGroups) {
+      if (!tokenGroups.length) return true;
       const haystack = [
         item.model,
         item.trim,
@@ -612,10 +645,44 @@
         item.serviceDue,
         item.serviceCost,
         item.forumWatchouts,
-      ].join(" ").toLowerCase();
-      const tokens = query.split(/\s+/).filter(Boolean);
-      if (tokens.length <= 1) return haystack.includes(query);
-      return tokens.some((token) => haystack.includes(token));
+      ].map(normalizeText).join(" ");
+      return tokenGroups.some((tokens) => tokens.every((token) => haystack.includes(token)));
+    }
+
+    function parseOptionalNumber(value) {
+      const trimmed = String(value ?? "").trim();
+      if (!trimmed) return null;
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function getSortValues() {
+      const selected = [elements.sort1.value, elements.sort2.value, elements.sort3.value];
+      const deduped = [];
+      const seen = new Set();
+      for (const value of selected) {
+        if (!value || value === "none" || seen.has(value)) continue;
+        seen.add(value);
+        deduped.push(value);
+      }
+      return deduped;
+    }
+
+    function describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage) {
+      const parts = [];
+      if (tokenGroups.length) parts.push(`search: ${elements.search.value.trim()}`);
+      if (maxPrice !== null && maxPrice !== DEFAULT_MAX_PRICE) parts.push(`max price: ${Math.round(maxPrice)}`);
+      if (maxMileage !== null) parts.push(`max mileage: ${Math.round(maxMileage)}`);
+      if (elements.fuel.value !== "All") parts.push(`fuel: ${elements.fuel.value}`);
+      if (elements.seller.value !== "All") parts.push(`seller: ${elements.seller.value}`);
+      if (elements.body.value !== "All") parts.push(`body: ${elements.body.value}`);
+      if (elements.risk.value !== "All") parts.push(`risk: ${elements.risk.value}`);
+      if (elements.unrated.value === "include") parts.push("including unrated");
+      if (sortValues.length) {
+        const sortText = sortValues.map((value) => sortLabelByValue[value] || value).join(" > ");
+        parts.push(`sort: ${sortText}`);
+      }
+      return parts.length ? `Active: ${parts.join(" • ")}` : "Active: default";
     }
 
     function compareField(a, b, sortValue) {
@@ -685,7 +752,7 @@
     function compareItems(a, b, sortValues) {
       for (const sortValue of sortValues) {
         const result = compareField(a, b, sortValue);
-        if (result !== 0) return result;
+        if (Number.isFinite(result) && result !== 0) return result;
       }
       return a.priceNum - b.priceNum || a.model.localeCompare(b.model);
     }
@@ -773,15 +840,15 @@
     }
 
     function renderInventory() {
-      const query = elements.search.value.trim().toLowerCase();
-      const maxPrice = Number(elements.maxPrice.value || 0);
-      const maxMileage = elements.maxMileage.value ? Number(elements.maxMileage.value) : null;
-      const sortValues = [elements.sort1.value, elements.sort2.value, elements.sort3.value].filter((value) => value && value !== "none");
-
-      const visibleInventory = appData.inventory.filter((item) => elements.risk.value !== "All" || item.risk !== "Unrated");
+      const tokenGroups = parseSearchQuery(elements.search.value.trim());
+      const maxPrice = parseOptionalNumber(elements.maxPrice.value);
+      const maxMileage = parseOptionalNumber(elements.maxMileage.value);
+      const sortValues = getSortValues();
+      const includeUnrated = elements.unrated.value === "include" || elements.risk.value === "Unrated";
+      const visibleInventory = includeUnrated ? appData.inventory : appData.inventory.filter((item) => item.risk !== "Unrated");
       const filtered = visibleInventory
-        .filter((item) => !query || matchesSearch(item, query))
-        .filter((item) => !maxPrice || item.priceNum <= maxPrice)
+        .filter((item) => matchesSearch(item, tokenGroups))
+        .filter((item) => maxPrice === null || item.priceNum <= maxPrice)
         .filter((item) => maxMileage === null || item.mileageMil <= maxMileage)
         .filter((item) => elements.fuel.value === "All" || item.fuel === elements.fuel.value)
         .filter((item) => elements.seller.value === "All" || item.seller === elements.seller.value)
@@ -791,6 +858,7 @@
 
       renderInventoryRows(filtered);
       elements.resultsSummary.textContent = `${filtered.length} of ${visibleInventory.length} cars shown`;
+      elements.filterState.textContent = describeActiveState(sortValues, tokenGroups, maxPrice, maxMileage);
       elements.viewCards.classList.toggle("active", inventoryView === "cards");
       elements.viewList.classList.toggle("active", inventoryView === "list");
     }
@@ -806,6 +874,7 @@
         elements.seller,
         elements.body,
         elements.risk,
+        elements.unrated,
         elements.sort1,
         elements.sort2,
         elements.sort3,
@@ -822,7 +891,8 @@
         elements.seller.value = "All";
         elements.body.value = "All";
         elements.risk.value = "All";
-        elements.sort1.value = "price-asc";
+        elements.unrated.value = "exclude";
+        elements.sort1.value = "none";
         elements.sort2.value = "none";
         elements.sort3.value = "none";
         renderInventory();
@@ -856,7 +926,8 @@
           populateSelect(elements.seller, appData.filters.sellers);
           populateSelect(elements.body, appData.filters.bodies);
           populateSelect(elements.risk, appData.filters.risks);
-          populateSelect(elements.sort1, appData.filters.sortOptions, "price-asc", false);
+          sortLabelByValue = Object.fromEntries(appData.filters.sortOptions.map((option) => [option.value, option.label]));
+          populateSelect(elements.sort1, appData.filters.sortOptions, "none", false);
           populateSelect(elements.sort2, appData.filters.sortOptions, "none", false);
           populateSelect(elements.sort3, appData.filters.sortOptions, "none", false);
           bindInventoryControls();
