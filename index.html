@@ -659,17 +659,17 @@
         case "body-desc":
           return compareText(a, b, "body", true);
         case "risk-best":
-          return riskRank(a.risk) - riskRank(b.risk) || compareText(a, b, "model");
+          return riskRank(a.risk) - riskRank(b.risk);
         case "risk-worst":
-          return riskRank(b.risk) - riskRank(a.risk) || compareText(a, b, "model");
+          return riskRank(b.risk) - riskRank(a.risk);
         case "service-due-asc":
           return compareText(a, b, "serviceDue");
         case "service-due-desc":
           return compareText(a, b, "serviceDue", true);
         case "service-cost-asc":
-          return serviceCostRank(a.serviceCost) - serviceCostRank(b.serviceCost) || compareText(a, b, "model");
+          return serviceCostRank(a.serviceCost) - serviceCostRank(b.serviceCost);
         case "service-cost-desc":
-          return serviceCostRank(b.serviceCost) - serviceCostRank(a.serviceCost) || compareText(a, b, "model");
+          return serviceCostRank(b.serviceCost) - serviceCostRank(a.serviceCost);
         case "reg-asc":
           return compareText(a, b, "reg");
         case "reg-desc":
