@@ -134,12 +134,49 @@
       overflow-x: auto;
       margin-top: 14px;
     }
+    .shortcut-grid,
     .car-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
       gap: 14px;
       margin-top: 14px;
     }
+    .shortcut-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .inventory-toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .tool-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .tool-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .view-toggle {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .view-toggle button {
+      width: 100%;
+    }
+    .view-toggle button.active {
+      border-color: var(--link);
+      color: var(--link);
+      font-weight: 700;
+    }
+    .shortcut-card,
+    .mini-card,
     .car-card {
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -147,6 +184,10 @@
       padding: 14px;
       display: grid;
       gap: 10px;
+    }
+    .shortcut-card {
+      text-align: left;
+      cursor: pointer;
     }
     .car-card-header {
       display: flex;
@@ -174,6 +215,34 @@
     }
     .car-note {
       margin: 0;
+    }
+    .car-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .mini-card .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+      white-space: nowrap;
     }
     @media (min-width: 1400px) {
       .summary-grid {
@@ -286,12 +355,22 @@
       </div>
     </section>
 
-    <div id="prius-root"></div>
-    <div id="shortlists-root"></div>
-
     <section class="panel inventory-only" id="full-inventory">
       <h2>Filter the full inventory</h2>
       <p class="muted" id="inventory-filter-intro"></p>
+      <div class="inventory-toolbar">
+        <section class="tool-card">
+          <h3>Quick shortcuts</h3>
+          <div id="shortcut-root"></div>
+        </section>
+        <section class="tool-card">
+          <h3>View mode</h3>
+          <div class="view-toggle">
+            <button id="view-cards" type="button" class="active">Card view</button>
+            <button id="view-list" type="button">List view</button>
+          </div>
+        </section>
+      </div>
       <div class="filters">
         <div>
           <label for="search">Search</label>
@@ -365,6 +444,9 @@
       priusRoot: document.getElementById("prius-root"),
       shortlistsRoot: document.getElementById("shortlists-root"),
       filterIntro: document.getElementById("inventory-filter-intro"),
+      shortcutRoot: document.getElementById("shortcut-root"),
+      viewCards: document.getElementById("view-cards"),
+      viewList: document.getElementById("view-list"),
       status: document.getElementById("page-status"),
       search: document.getElementById("search"),
       maxPrice: document.getElementById("max-price"),
@@ -380,6 +462,7 @@
       resultsSummary: document.getElementById("results-summary"),
       inventoryBody: document.getElementById("inventory-body"),
     };
+    let inventoryView = "cards";
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -429,106 +512,43 @@
       elements.filterIntro.textContent = copy.inventoryFilterIntro;
     }
 
-    function renderPriusComparison(rows) {
-      elements.priusRoot.innerHTML = `
-        <section class="panel">
-          <h2>Toyota Prius comparison table</h2>
-          <p class="muted">All Prius rows from the widened inventory collected into one comparable table. Owners and debt are shown where known; the GDS301 owner count is explicitly confirmed via Transportstyrelsen.</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Reg</th>
-                  <th>Year</th>
-                  <th>Mileage</th>
-                  <th>Price</th>
-                  <th>Owners</th>
-                  <th>Debt</th>
-                  <th>Location</th>
-                  <th>Seller</th>
-                  <th>Body</th>
-                  <th>Risk</th>
-                  <th>Service due soon</th>
-                  <th>Likely cost</th>
-                  <th>Forum watchouts</th>
-                  <th>Registry note</th>
-                  <th>Link</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map((row) => `
-                  <tr>
-                    <td>${escapeHtml(row.reg)}</td>
-                    <td>${escapeHtml(row.year)}</td>
-                    <td>${escapeHtml(row.mileage)}</td>
-                    <td>${escapeHtml(row.price)}</td>
-                    <td>${escapeHtml(row.owners)}</td>
-                    <td>${escapeHtml(row.debt)}</td>
-                    <td>${escapeHtml(row.location)}</td>
-                    <td>${escapeHtml(row.seller)}</td>
-                    <td>${escapeHtml(row.body)}</td>
-                    <td><span class="${badgeClass(row.risk)}">${escapeHtml(row.risk)}</span></td>
-                    <td>${escapeHtml(row.serviceDue)}</td>
-                    <td>${escapeHtml(row.serviceCost)}</td>
-                    <td>${escapeHtml(row.forumWatchouts)}</td>
-                    <td>${escapeHtml(row.registryNote)}</td>
-                    <td><a href="${escapeHtml(row.href)}">Blocket</a></td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      `;
+    function setFilters(values) {
+      if (values.search !== undefined) elements.search.value = values.search;
+      if (values.maxPrice !== undefined) elements.maxPrice.value = values.maxPrice;
+      if (values.maxMileage !== undefined) elements.maxMileage.value = values.maxMileage;
+      if (values.fuel !== undefined) elements.fuel.value = values.fuel;
+      if (values.seller !== undefined) elements.seller.value = values.seller;
+      if (values.body !== undefined) elements.body.value = values.body;
+      if (values.risk !== undefined) elements.risk.value = values.risk;
+      if (values.sort1 !== undefined) elements.sort1.value = values.sort1;
+      if (values.sort2 !== undefined) elements.sort2.value = values.sort2;
+      if (values.sort3 !== undefined) elements.sort3.value = values.sort3;
+      renderInventory();
     }
 
-    function renderShortlists(shortlists) {
-      elements.shortlistsRoot.innerHTML = shortlists.map((shortlist) => `
-        <section class="panel">
-          <h2 id="${escapeHtml(shortlist.slug)}">${escapeHtml(shortlist.title)}</h2>
-          <p class="muted">${escapeHtml(shortlist.description)}</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Car</th>
-                  <th>Year</th>
-                  <th>Mileage</th>
-                  <th>Price</th>
-                  <th>Location</th>
-                  <th>Owners</th>
-                  <th>Reg</th>
-                  <th>Risk</th>
-                  <th>Service due soon</th>
-                  <th>Likely cost</th>
-                  <th>Forum watchouts</th>
-                  <th>Why it is here</th>
-                  <th>Link</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${shortlist.items.map((item) => `
-                  <tr>
-                    <td><strong>${escapeHtml(item.model)}</strong><br><span class="muted">${escapeHtml(item.trim)}</span></td>
-                    <td>${escapeHtml(item.year)}</td>
-                    <td>${escapeHtml(item.mileage)}</td>
-                    <td>${escapeHtml(item.price)}</td>
-                    <td>${escapeHtml(item.location)}</td>
-                    <td>${escapeHtml(item.owners)}</td>
-                    <td>${escapeHtml(item.reg)}</td>
-                    <td><span class="${badgeClass(item.risk)}">${escapeHtml(item.risk)}</span></td>
-                    <td>${escapeHtml(item.serviceDue)}</td>
-                    <td>${escapeHtml(item.serviceCost)}</td>
-                    <td>${escapeHtml(item.forumWatchouts)}</td>
-                    <td>${escapeHtml(item.shortlistNote)}</td>
-                    <td><a href="${escapeHtml(item.href)}">Blocket</a></td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      `).join("");
+    function renderShortcuts() {
+      const shortcuts = [
+        { id: "prius", title: "Prius", note: "Best reliability-first bet.", values: { search: "Prius", sort1: "price-asc" } },
+        { id: "jazz", title: "Jazz", note: "Good CVT family pick.", values: { search: "Jazz", sort1: "price-asc" } },
+        { id: "city", title: "Aygo / 107 / C1", note: "Small city-car cluster.", values: { search: "Aygo 107 C1", sort1: "price-asc" } },
+        { id: "avoid", title: "Avoid list", note: "Yaris/Auris/207/Polo warnings.", values: { search: "Yaris Auris 207 Polo", risk: "Avoid", sort1: "price-asc" } },
+        { id: "lowmiles", title: "Low mileage", note: "Pull the easiest-looking cars first.", values: { maxMileage: 15000, sort1: "mileage-asc" } },
+        { id: "clear", title: "Reset", note: "Back to full inventory.", values: { search: "", maxPrice: "50000", maxMileage: "", fuel: "All", seller: "All", body: "All", risk: "All", sort1: "price-asc", sort2: "none", sort3: "none" } },
+      ];
+      elements.shortcutRoot.innerHTML = `<div class="shortcut-grid">${shortcuts
+        .map(
+          (shortcut) => `
+          <button class="shortcut-card" type="button" data-shortcut="${shortcut.id}">
+            <strong>${escapeHtml(shortcut.title)}</strong>
+            <span class="muted">${escapeHtml(shortcut.note)}</span>
+          </button>
+        `,
+        )
+        .join("")}</div>`;
+      elements.shortcutRoot.querySelectorAll("[data-shortcut]").forEach((button) => {
+        const shortcut = shortcuts.find((item) => item.id === button.dataset.shortcut);
+        button.addEventListener("click", () => setFilters(shortcut.values));
+      });
     }
 
     function matchesSearch(item, query) {
@@ -548,7 +568,9 @@
         item.serviceCost,
         item.forumWatchouts,
       ].join(" ").toLowerCase();
-      return haystack.includes(query);
+      const tokens = query.split(/\s+/).filter(Boolean);
+      if (tokens.length <= 1) return haystack.includes(query);
+      return tokens.some((token) => haystack.includes(token));
     }
 
     function compareField(a, b, sortValue) {
@@ -587,6 +609,7 @@
 
     function renderInventoryRows(rows) {
       elements.resultsSummary.textContent = `${rows.length} of ${appData.inventory.length} cars shown`;
+      elements.inventoryBody.className = inventoryView === "cards" ? "car-grid" : "car-list";
       elements.inventoryBody.innerHTML = rows.map((item) => `
         <article class="car-card">
           <div class="car-card-header">
@@ -633,6 +656,8 @@
         .sort((a, b) => compareItems(a, b, sortValues));
 
       renderInventoryRows(filtered);
+      elements.viewCards.classList.toggle("active", inventoryView === "cards");
+      elements.viewList.classList.toggle("active", inventoryView === "list");
     }
 
     function bindInventoryControls() {
@@ -667,6 +692,14 @@
         elements.sort3.value = "none";
         renderInventory();
       });
+      elements.viewCards.addEventListener("click", () => {
+        inventoryView = "cards";
+        renderInventory();
+      });
+      elements.viewList.addEventListener("click", () => {
+        inventoryView = "list";
+        renderInventory();
+      });
     }
 
     async function loadData() {
@@ -681,8 +714,7 @@
       try {
         appData = await loadData();
         renderSummary(appData);
-        renderPriusComparison(appData.priusComparison);
-        renderShortlists(appData.shortlists);
+        renderShortcuts();
 
         if (pageMode === "inventory") {
           populateSelect(elements.fuel, appData.filters.fuels);

@@ -9,7 +9,7 @@
     "inventoryBottomLineHtml": "If the goal is <strong>cheap automatic transport with the lowest risk of an ugly gearbox surprise</strong>, I would start with the <strong>Prius</strong> entries first and the <strong>Honda Jazz</strong> entries second. The small Aygo / 107 / C1 cars are still in the pool, but the robotized gearbox is their catch. I would actively de-rank <strong>Yaris/Auris MultiMode</strong>, <strong>Peugeot 207 automatic</strong>, and older <strong>Polo automatics</strong>.",
     "shortlistBottomLineHeading": "Bottom line",
     "shortlistBottomLineHtml": "<strong>Prius first, Jazz second, low-mileage Accent as a wildcard.</strong> The small Aygo / 107 / C1 cars can still make sense, but only if the robotized gearbox is clearly healthy. I would actively de-rank Yaris / Auris MultiMode, Peugeot 207 automatic, and older Polo automatics.",
-    "inventoryFilterIntro": "This table is client-side filterable and sortable. Search works across model, trim, location, fuel, registration number, seller type, risk note, service-due note, and forum watchouts."
+    "inventoryFilterIntro": "Use the shortcut cards for common filters, then search/sort the inventory below. Search works across model, trim, location, fuel, registration number, seller type, risk note, service-due note, and forum watchouts."
   },
   "summary": {
     "inventoryCards": [

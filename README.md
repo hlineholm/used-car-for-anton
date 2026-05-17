@@ -7,7 +7,7 @@ Minimal static site for browsing automatic commuter cars around Uppsala.
 | Path | Role |
 | --- | --- |
 | `README.md` | Repo overview. |
-| `index.html` | The page. Shows shortlist sections first, then the full filterable inventory. |
+| `index.html` | The page. Shows summary cards, shortcut cards, then the full filterable inventory. |
 | `data.json` | Generated page data. |
 | `scripts/serve.py` | Local HTTP preview helper. |
 
@@ -32,6 +32,5 @@ GitHub Pages does **not** support a real password gate on its own. If you want a
 ## Notes
 
 - The page is static.
-- The shortlist stays near the top.
-- The full inventory stays below with filters and chained sorts.
+- The page focuses on one full inventory with shortcuts and a card/list toggle.
 - Service and forum notes are heuristic guidance, not service-history proof.
